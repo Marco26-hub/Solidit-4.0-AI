@@ -140,3 +140,15 @@ async def test_report_generate_verify_download(client, require_db):
     assert r.status_code == 200
     assert r.headers["content-type"] == "application/pdf"
     assert r.content[:5] == b"%PDF-"
+
+    # finalize (lock) the report -> official immutable emission
+    r = await client.post(f"/api/v1/reports/{report['id']}/finalize", headers=h)
+    assert r.status_code == 200, r.text
+    locked = r.json()
+    assert locked["status"] == "locked"
+    assert locked["locked_at"] is not None
+
+    # a locked report blocks emitting another one over the same job
+    r = await client.post(f"/api/v1/test-jobs/{job['id']}/reports", headers=h)
+    assert r.status_code == 409, r.text
+    assert "locked" in r.text.lower() or "bloccato" in r.text.lower()

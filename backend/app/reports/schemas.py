@@ -14,6 +14,7 @@ class ReportOut(BaseModel):
     test_job_id: uuid.UUID
     sha256_hash: str
     status: str
+    locked_at: datetime | None = None
     created_at: datetime
 
 

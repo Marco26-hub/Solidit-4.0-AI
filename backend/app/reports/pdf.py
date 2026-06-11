@@ -141,6 +141,45 @@ def build_report_pdf(payload: dict[str, Any], sha256_hash: str, verify_url: str)
         Paragraph(
             f"Algoritmo: {payload.get('measurement', {}).get('algorithm_version', '-')}", small
         ),
+    ]
+
+    # ── Provenance & warnings (accreditation: nothing hidden) ────────────────────
+    prov = payload.get("provenance", {}) or {}
+    story += [Spacer(1, 10), Paragraph("Provenienza & avvertenze", styles["Heading2"])]
+    story.append(
+        Paragraph(
+            f"Sorgente: {prov.get('source', '-')} · correzione colore: "
+            f"{prov.get('colour_correction', '-')} · profilo grading: "
+            f"{prov.get('grading_profile', '-')}",
+            small,
+        )
+    )
+    refs = prov.get("references", {}) or {}
+    if refs:
+        ref_txt = " · ".join(
+            f"{slot}={r.get('code')} ({r.get('validity')})" for slot, r in refs.items()
+        )
+        story.append(Paragraph(f"Riferimenti/strumenti: {ref_txt}", small))
+    else:
+        story.append(
+            Paragraph(
+                "Riferimenti/strumenti: nessuno collegato — cattura non accreditabile.", small
+            )
+        )
+    rep = prov.get("repeatability") or {}
+    if rep.get("replicates", 0) and rep.get("replicates", 0) > 1:
+        story.append(
+            Paragraph(
+                f"Ripetibilità: {rep.get('replicates')} repliche · scarto massimo "
+                f"{rep.get('max_deviation_grade')} gradi.",
+                small,
+            )
+        )
+    warn_style = ParagraphStyle("warn", parent=small, textColor=colors.HexColor("#a16207"))
+    for w in prov.get("warnings", []) or []:
+        story.append(Paragraph(f"⚠ {w}", warn_style))
+
+    story += [
         Spacer(1, 10),
         _qr(verify_url),
         Spacer(1, 4),

@@ -1,14 +1,20 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { downloadReport, listReports, verifyReport } from "@/api/quality";
+import { downloadReport, finalizeReport, listReports, verifyReport } from "@/api/quality";
 import type { ReportVerify } from "@/api/types";
 import { Badge, Button, Card, ErrorText, PageHeader } from "@/components/ui";
 
 export function LedgerPage() {
+  const qc = useQueryClient();
   const reports = useQuery({ queryKey: ["reports"], queryFn: listReports });
   const [verified, setVerified] = useState<Record<string, ReportVerify>>({});
   const [busy, setBusy] = useState<string | null>(null);
+
+  const finalize = useMutation({
+    mutationFn: (id: string) => finalizeReport(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["reports"] }),
+  });
 
   async function verify(id: string) {
     setBusy(id);
@@ -54,7 +60,9 @@ export function LedgerPage() {
                   <td className="py-1.5 font-medium">{r.report_number}</td>
                   <td className="font-mono text-xs text-steel">{r.sha256_hash.slice(0, 16)}…</td>
                   <td>
-                    <Badge kind="muted">{r.status}</Badge>
+                    <Badge kind={r.status === "locked" ? "pass" : "muted"}>
+                      {r.status === "locked" ? "bloccato (ufficiale)" : r.status}
+                    </Badge>
                   </td>
                   <td>
                     {v ? (
@@ -66,6 +74,15 @@ export function LedgerPage() {
                     )}
                   </td>
                   <td className="text-right">
+                    {r.status !== "locked" && (
+                      <Button
+                        variant="ghost"
+                        disabled={finalize.isPending}
+                        onClick={() => finalize.mutate(r.id)}
+                      >
+                        finalizza
+                      </Button>
+                    )}
                     <Button variant="ghost" onClick={() => download(r.id, r.report_number)}>
                       PDF
                     </Button>

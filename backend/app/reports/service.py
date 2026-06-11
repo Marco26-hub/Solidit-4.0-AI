@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.common.errors import AppError, NotFoundError
+from app.common.errors import AppError, ConflictError, NotFoundError
 from app.common.storage import get_storage
 from app.config import settings
 from app.db.models import (
@@ -50,6 +50,16 @@ async def generate_report(
     job_id: uuid.UUID,
 ) -> QualityReport:
     job = await get_test_job(session, company_id, job_id)
+
+    # a locked report is the official emission — do not silently emit another
+    existing = await list_reports(session, company_id, test_job_id=job_id)
+    locked = next((r for r in existing if r.status == "locked"), None)
+    if locked is not None:
+        raise ConflictError(
+            f"Esiste già un report bloccato per questa prova ({locked.report_number}).",
+            code="report_locked",
+        )
+
     result = await _latest_result(session, company_id, job_id)
     if result is None:
         raise AppError(
@@ -75,6 +85,24 @@ async def generate_report(
     now = datetime.now(UTC)
     report_number = f"RPT-{now.year}-{report_id.hex[:8].upper()}"
 
+    # explicit provenance for the report (accreditation: nothing hidden)
+    res = result.results or {}
+    vision = res.get("vision", {}) if isinstance(res, dict) else {}
+    qflags = vision.get("quality_flags", {}) if isinstance(vision, dict) else {}
+    provenance = {
+        "algorithm_version": result.algorithm_version,
+        "source": res.get("source", "manual"),
+        "assessment_type": res.get("assessment_type"),
+        "references": res.get("references", {}),
+        "grading_profile": qflags.get("grading_profile"),
+        "colour_correction": qflags.get("colour_correction"),
+        "grey_scale_detected": (qflags.get("grey_scale") or {}).get("detected"),
+        "fiber_order": qflags.get("fiber_order"),
+        "capture_acceptable": (qflags.get("capture") or {}).get("acceptable"),
+        "repeatability": vision.get("repeatability"),
+        "warnings": vision.get("warnings", []),
+    }
+
     payload = {
         "report_number": report_number,
         "company": {"id": str(company.id), "name": company.name},
@@ -85,13 +113,14 @@ async def generate_report(
             "barcode": job.barcode,
             "status": job.status,
         },
-        "test_method_code": result.results.get("test_method_code"),
+        "test_method_code": res.get("test_method_code") if isinstance(res, dict) else None,
         "brand": brand,
         "measurement": {
             "algorithm_version": result.algorithm_version,
             "results": result.results,
             "pass_fail": result.pass_fail,
         },
+        "provenance": provenance,
         "generated_at": now.isoformat(),
         "generated_by": str(user_id),
     }
@@ -123,6 +152,19 @@ async def generate_report(
             sha256_hash=sha,
         )
     )
+    await session.flush()
+    return report
+
+
+async def finalize_report(
+    session: AsyncSession, company_id: uuid.UUID, report_id: uuid.UUID
+) -> QualityReport:
+    """Lock a report as the official emission. Immutable afterwards; idempotent."""
+    report = await get_report(session, company_id, report_id)
+    if report.status == "locked":
+        return report
+    report.status = "locked"
+    report.locked_at = datetime.now(UTC)
     await session.flush()
     return report
 

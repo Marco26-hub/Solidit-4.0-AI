@@ -35,6 +35,8 @@ class QualityReport(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
     # SHA-256 cryptographic integrity seal (NOT a qualified digital signature)
     sha256_hash: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False, server_default="generated")
+    # set when the report is finalised; after this it is the official emission
+    locked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class ReportSignature(UUIDPrimaryKeyMixin, Base):

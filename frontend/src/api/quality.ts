@@ -254,6 +254,9 @@ export const listReports = () => apiFetch<Report[]>("/api/v1/reports");
 export const verifyReport = (reportId: string) =>
   apiFetch<ReportVerify>(`/api/v1/reports/${reportId}/verify`);
 
+export const finalizeReport = (reportId: string) =>
+  apiFetch<Report>(`/api/v1/reports/${reportId}/finalize`, { method: "POST" });
+
 export const downloadReportUrl = (reportId: string) =>
   `${import.meta.env.VITE_API_BASE ?? "http://localhost:8000"}/api/v1/reports/${reportId}/download`;
 

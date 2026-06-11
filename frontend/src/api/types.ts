@@ -193,6 +193,7 @@ export interface Report {
   test_job_id: string;
   sha256_hash: string;
   status: string;
+  locked_at: string | null;
   created_at: string;
 }
 

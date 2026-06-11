@@ -7,11 +7,14 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.common.deps import Principal, get_db, get_tenant_principal
+from app.common.audit import record_audit
+from app.common.deps import Principal, get_db, get_tenant_principal, require_role
 from app.reports import service
 from app.reports.schemas import ReportOut, ReportVerify
 
 router = APIRouter(prefix="/api/v1/reports", tags=["reports"])
+
+_FINALIZE = require_role("company_admin", "lab_manager")
 
 
 @router.get("", response_model=list[ReportOut])
@@ -34,6 +37,25 @@ async def get_report(
     session: AsyncSession = Depends(get_db),
 ) -> ReportOut:
     report = await service.get_report(session, principal.company_id, report_id)
+    return ReportOut.model_validate(report)
+
+
+@router.post("/{report_id}/finalize", response_model=ReportOut)
+async def finalize_report(
+    report_id: uuid.UUID,
+    principal: Principal = Depends(_FINALIZE),
+    session: AsyncSession = Depends(get_db),
+) -> ReportOut:
+    report = await service.finalize_report(session, principal.company_id, report_id)
+    await record_audit(
+        session,
+        action="report.finalize",
+        entity_type="quality_report",
+        company_id=principal.company_id,
+        actor_user_id=principal.user_id,
+        entity_id=report.id,
+        payload={"report_number": report.report_number},
+    )
     return ReportOut.model_validate(report)
 
 
