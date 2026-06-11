@@ -1,219 +1,147 @@
 # HANDOFF.md — Solidità 4.0 Project Handoff
 
+> Aggiornato: 2026-06-11 · Repo: https://github.com/Marco26-hub/Solidit-4.0-AI
+
 ## Contesto
 
-Solidità 4.0 è un progetto SaaS industriale per il controllo qualità tessile. Il prodotto nasce per aziende del distretto tessile, tintorie, stamperie e brand moda che vogliono digitalizzare prove, report, batch zero, controlli qualità e storico metrologico.
+Solidità 4.0 è un SaaS industriale per il controllo qualità tessile (tintorie,
+stamperie, finissaggi, brand moda): digitalizza prove di solidità colore, report,
+batch zero, capitolati brand e storico metrologico.
 
-Il progetto non deve essere comunicato come sostituto immediato di un laboratorio accreditato. Deve essere comunicato come piattaforma di supporto, tracciabilità, pre-validazione e standardizzazione dei controlli qualità.
+Posizionamento corretto: **sistema di digital imaging validabile per la
+valutazione assistita / pre-valutazione della solidità colore**. NON comunicare
+come sostituto di un laboratorio accreditato né come "spettrofotometro".
 
-## Stato attuale
+## Stato attuale — CODEBASE FUNZIONANTE
 
-Siamo nella fase di progettazione production-ready.
+Monorepo attivo: `backend/` (FastAPI, Python 3.12) · `frontend/` (React+Vite+TS)
+· `mobile/` (skeleton RN) · `infra/` (docker-compose Postgres 16 + Redis).
 
-Sono stati definiti:
-- posizionamento commerciale;
-- architettura tecnica;
-- database multi-tenant;
-- backend FastAPI;
-- portale React;
-- app iPhone;
-- hardware kit;
-- vision engine;
-- report hash;
-- roadmap sprint;
-- principi compliance.
+**62 test backend verdi · ruff pulito · build frontend pulito.**
 
-Non esiste ancora una codebase completa production-ready. Il prossimo step è avviare lo sviluppo guidato con Claude Code o team tecnico.
+### Implementato (Trace + Vision base + fondamenta accreditamento)
 
-## Obiettivo prossimo
+- **Multi-tenant**: PostgreSQL RLS (FORCE, ruolo app non-superuser `solidita_app`,
+  `SET LOCAL` per transazione), JWT access/refresh con rotation + reuse detection,
+  rate limiting, security headers, audit log **append-only** (REVOKE UPDATE/DELETE).
+- **Dominio qualità**: brand specs/capitolato (CSV import + PDF allegato), batch
+  zero multifibra con profili striscia per norma (ISO 105-F10 DW/TV, AATCC No.1/10),
+  test methods catalogo UNI EN ISO 105 (E01-E08 acqua/mare/clorata/sudore 37°C,
+  C08/C10, D01, B02, N01, P01, X11/X12) + AATCC + ASTM, articoli+varianti
+  (riferimento colour-change), test jobs multi-solidità, risultato manuale con
+  fibre precaricate dalla norma.
+- **Vision engine** (`vision-core-0.2.x`): foto = sola striscia multifibra →
+  auto-detect striscia + bande **in ordine norma** (seam-snapping), RGB→Lab→ΔE
+  CIEDE2000 → grado grey-scale via **profili configurabili per famiglia norma**
+  (ISO_105/AATCC/ASTM — soglie builtin = ESEMPIO, flaggate nel risultato),
+  **scala grigia in-frame** (rilevamento riferimento neutro + white-balance,
+  logica ISO 105-A11), colour-change vs Lab variante, **ripetibilità** su
+  repliche (scarto max gradi), **strict mode** (rifiuto hard cattura scarsa),
+  quality gate (blur/esposizione/fill) + confidence per banda.
+- **Tarature/strumenti** (ISO 17025): registro `calibration_references`
+  (scala grigia/piastrina/target/lightbox + certificato + scadenza) —
+  **analisi BLOCCATA se riferimento scaduto/dismesso**; provenienza strumenti
+  nel risultato.
+- **Norme**: upload per-tenant della PROPRIA copia licenziata della norma
+  (PDF) per metodo — non ridistribuiamo testo ISO (copyright-safe).
+- **Report**: Digital Quality Report PDF + **SHA-256 sigillo di integrità**
+  (NON firma qualificata) + ledger + verify + QR + **lock/finalize**
+  (immutabile, ri-emissione bloccata 409) + **provenienza piena** nel PDF
+  (sorgente, correzione colore, profilo grading, riferimenti+validità,
+  ripetibilità, warning).
+- **Validazione metodo**: campagne campioni software-vs-riferimento
+  (spettrofotometro/visivo/lab esterno) con statistiche (scarto medio,
+  % entro ±0.5 grado, bias, RMSE, pass indicativo ≥90%). Pronto a ricevere
+  campioni reali. **È il documento di credibilità per l'accreditamento.**
+- **Frontend** (mobile-first): Dashboard, Brand, Articoli, Batch, Prove
+  (fibre auto da norma, fotocamera/webcam + upload, vision staining +
+  colour-change, riferimenti strumenti, toggle in-frame grey-scale e strict),
+  Norme (catalogo + upload norma), Report ledger (verifica/finalizza/PDF),
+  Device (+ registro tarature). Silent token refresh.
+- **GDPR**: export/delete endpoint + template legali in `docs/legal/`.
+- **Migrazioni Alembic**: 0001→0010 (testa: `0010_validation_samples`).
 
-Costruire un MVP vendibile in due livelli:
+### Migrazioni chiave
+`0001` schema completo+RLS · `0004` profili striscia · `0006` articoli+grading
+profiles · `0007` catalogo ISO 105 + method_documents · `0008` calibration
+references + blocco scadenze · `0009` report lock · `0010` validation samples.
 
-### MVP 1 — Trace
+## Setup locale
 
-SaaS per:
-- aziende;
-- utenti;
-- reparti;
-- brand specs;
-- batch zero;
-- test jobs;
-- report PDF;
-- hash SHA-256;
-- certificate ledger;
-- audit log.
-
-### MVP 2 — Vision Base
-
-Aggiunta di:
-- app iPhone;
-- acquisizione guidata;
-- upload immagine;
-- correzione geometrica;
-- correzione colore configurabile;
-- DeltaE CIEDE2000;
-- grey scale mapping configurabile;
-- pass/fail secondo brand rules.
-
-## Decisioni già prese
-
-### Hardware
-
-Minimo commerciale consigliato:
-- iPhone 16 Pro o superiore.
-
-Compatibile:
-- iPhone 15 Pro/Pro Max previa calibrazione.
-
-Kit consigliato:
-- lightbox D65/TL84;
-- tile/reference standard;
-- ColorChecker;
-- dima fisica;
-- app configurata;
-- iPhone opzionale già configurato;
-- MDM per clienti enterprise.
-
-### Posizionamento
-
-Frase corretta:
-> Solidità 4.0 è il sistema operativo digitale del laboratorio qualità tessile.
-
-Evitare:
-> Certifica automaticamente secondo ISO.
-
-### Report
-
-Il report deve essere chiamato:
-- Digital Quality Report;
-- Report Digitale di Controllo Qualità Tessile.
-
-Il codice SHA-256 deve essere definito:
-- hash crittografico di integrità;
-- sigillo tecnico di integrità.
-
-Non chiamarlo firma digitale qualificata.
-
-### Standard
-
-Usare:
-- ISO 105-A02/A03 come scale visive/reporting;
-- ISO 105-A04/A05 per logiche strumentali;
-- AATCC EP7/EP12 per valutazioni strumentali ove applicabile.
-
-Non hardcodare formule protette da standard a pagamento. Creare mapping engine configurabile.
-
-## Rischi principali
-
-1. Vendere troppo presto come certificazione automatica.
-2. Affidarsi solo all’iPhone senza dima/lightbox.
-3. Confondere omografia con correzione colore.
-4. Hardcodare formule ISO/AATCC senza licenza.
-5. Non validare il sistema con campioni reali.
-6. Mancanza di RLS/multi-tenant isolation.
-7. Mancanza di audit trail.
-8. Mancanza di contratti GDPR/DPA.
-9. Promettere AI predittiva senza dataset.
-
-## Regola tecnica fondamentale
-
-La pipeline corretta è:
-
-```
-raw image
--> capture validation
--> marker detection
--> homography/geometric correction
--> color correction matrix/LUT
--> ROI segmentation
--> RGB to Lab
--> DeltaE CIEDE2000
--> configurable grey scale mapping
--> brand rules
--> pass/fail
--> signed/hash report
+```bash
+# Postgres 16 con ruolo solidita_app (vedi infra/postgres/init.sql)
+cd backend && pip install -e ".[vision]"
+python -m alembic upgrade head
+uvicorn app.main:app --port 8000
+cd ../frontend && npm i && npm run dev   # VITE_API_BASE=http://localhost:8000
+pytest backend  # 62 verdi (serve Postgres)
 ```
 
-## Team handoff
+Deploy: vedi **DEPLOY.md** (frontend su Vercel root=`frontend`; backend su
+Railway/Render/Fly/VPS — NON su Vercel; DB consigliato: Neon/managed Postgres
+con ruolo non-superuser).
 
-Chi prende in mano il progetto deve prima leggere:
+## Cosa resta (in ordine)
 
-1. README.md
-2. PRODUCT_SPEC.md
-3. ARCHITECTURE.md
-4. DATABASE_SCHEMA.md
-5. CLAUDE.md
-6. ROADMAP_SPRINT.md
+1. **UI Validazione** (pagina campagne + inserimento campioni + metriche).
+2. **Fascicolo tecnico/SOP** (template: SOP acquisizione, tarature, analisi,
+   report, formazione, non-conformità, registro strumenti/versioni).
+3. **Deploy produzione**: backend host + **S3 storage** (LocalStorage è solo
+   dev) + Stripe attivo + email transazionali + backup/observability.
+4. Hardening vision: marker ArUco + omografia (OpenCV), worker async.
+5. App iOS nativa di cattura (vedi sotto "Mobile").
 
-Poi deve partire dallo Sprint 0 e Sprint 1, non dai moduli AI avanzati.
+### Non-codice (bloccanti accreditamento — responsabilità business)
+- Campioni reali 30→50→100 + confronto spettrofotometro/lab.
+- Kit hardware certificato (dima, lightbox D65/TL84, scala grigia ISO,
+  piastrina bianca, ColorChecker) con certificati.
+- Consulente ISO/IEC 17025 + laboratorio conforme (si accredita il
+  laboratorio+metodo, non l'app da sola).
+- Licenze tabelle/soglie grading ufficiali (sostituire profili ESEMPIO).
 
-## Commercial handoff
+## Mobile — decisione
 
-Per il team commerciale:
+- Il **portale web** resta la piattaforma di gestione (desktop + iPhone Safari).
+- La **cattura accreditabile su iPhone 16 Pro richiede app iOS nativa**
+  (AVFoundation): blocco esposizione/WB/fuoco, formati RAW, controllo torcia,
+  telemetria sensori — Safari/getUserMedia NON espone questi controlli.
+  La web app cattura "best effort" (ok per demo/pre-valutazione), la nativa è
+  il passo per metrologia ripetibile. `mobile/` è lo skeleton predisposto.
 
-Prodotto iniziale:
-- Trace SaaS;
-- Vision Pro Kit opzionale.
+## Regole non negoziabili (immutate)
 
-Non vendere:
-- AI 60 FPS come già pronta;
-- certificazione ISO automatica;
-- sostituzione laboratorio.
+1. RLS multi-tenant ovunque, ruolo DB non-superuser.
+2. Nessuna formula/tabella ISO/AATCC proprietaria hardcoded: mapping configurabile.
+3. SHA-256 = sigillo di integrità, mai "firma digitale qualificata".
+4. Geometria e correzione colore SEPARATE nel pipeline.
+5. iPhone = quality gate di cattura, non metrologia da solo: serve kit.
+6. Fallback espliciti: ogni default non validato (soglie ESEMPIO, nessuna
+   correzione colore, ordine fibre fallback) è flaggato nel risultato e nel PDF.
 
-Vendere:
-- digitalizzazione laboratorio;
-- report firmati con hash;
-- riduzione soggettività;
-- storico qualità;
-- brand rules;
-- velocità controllo;
-- base dati per decisioni.
-
-## Pricing handoff
-
-Indicativo:
-
-### Trace
-
-Setup: 3.900 - 5.900 EUR  
-Canone: 149 - 299 EUR/mese
-
-### Vision Pro
-
-Setup: 9.900 - 14.900 EUR  
-Canone: 399 - 799 EUR/mese
-
-### Vision Pro con iPhone configurato
-
-Setup: 11.900 - 13.900+ EUR  
-Canone: 499 - 799 EUR/mese
-
-### Enterprise
-
-Setup: 24.900 - 49.900+ EUR  
-Canone: 1.200 - 3.000+ EUR/mese
-
-## Prossima azione concreta
-
-Creare repository monorepo:
+## Pipeline tecnica (implementata)
 
 ```
-solidita-4-0/
-  backend/
-  frontend/
-  mobile/
-  infra/
-  docs/
+foto striscia → quality gate (blur/exposure/fill) [strict: rifiuto]
+→ grey-scale in-frame → white balance neutro
+→ auto-detect striscia → bande in ordine norma (seam snapping)
+→ RGB → Lab → ΔE CIEDE2000 vs riferimento (batch zero | variante)
+→ grado grey-scale (profilo per famiglia norma, ESEMPIO flaggato)
+→ ripetibilità su repliche → brand rules pass/fail
+→ report PDF + provenienza + SHA-256 → finalize/lock
 ```
 
-Poi implementare:
-1. auth;
-2. companies;
-3. RLS;
-4. devices;
-5. brand specs;
-6. batch zero;
-7. test jobs;
-8. report ledger.
+## Commercial handoff (immutato nei principi)
 
-Solo dopo implementare Vision Engine.
+Vendere: digitalizzazione laboratorio, report con sigillo hash, riduzione
+soggettività, storico qualità, brand rules, tracciabilità strumenti.
+NON vendere: certificazione ISO automatica, sostituzione laboratorio,
+AI predittiva senza dataset.
+
+Pricing indicativo: Trace setup 3.9-5.9k€ + 149-299€/m · Vision Pro setup
+9.9-14.9k€ + 399-799€/m · Enterprise 24.9k€+ + 1.2-3k€/m.
+
+## Letture per chi subentra
+
+1. `README.md` · 2. `CLAUDE.md` (regole) · 3. `DEPLOY.md` · 4. questo file ·
+5. `backend/app/db/migrations/versions/` (lo schema racconta il dominio) ·
+6. memoria di build: `~/.claude/projects/...solidita.../memory/solidita-build-state.md`
