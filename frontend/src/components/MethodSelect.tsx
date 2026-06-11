@@ -5,6 +5,9 @@ import type { TestMethod } from "@/api/types";
 /** Collapse the fine standard_family label into one of the top-level norm bodies. */
 export function normGroup(fam: string | null | undefined): string {
   const f = (fam ?? "").toUpperCase();
+  // leather first (its ISO codes are 116xx/157xx/177xx, not ISO 105)
+  if (f.includes("CUOIO") || f.includes("IULTCS") || f.includes("IUF") || f.includes("LEATHER"))
+    return "Cuoio (ISO/IULTCS)";
   if (f.includes("AATCC")) return "AATCC";
   if (f.includes("ASTM")) return "ASTM";
   if (f.includes("ISO")) return "UNI EN ISO 105";
@@ -12,10 +15,11 @@ export function normGroup(fam: string | null | undefined): string {
 }
 
 /** Display order of the norm bodies. */
-function groupRank(g: string): number {
+export function groupRank(g: string): number {
   if (g === "UNI EN ISO 105") return 0;
   if (g === "AATCC") return 1;
   if (g === "ASTM") return 2;
+  if (g === "Cuoio (ISO/IULTCS)") return 3;
   return 9;
 }
 

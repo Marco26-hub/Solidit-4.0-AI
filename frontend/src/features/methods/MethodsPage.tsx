@@ -8,7 +8,7 @@ import {
   uploadMethodDocument,
 } from "@/api/quality";
 import type { TestMethod } from "@/api/types";
-import { normGroup } from "@/components/MethodSelect";
+import { groupRank, normGroup } from "@/components/MethodSelect";
 import { Badge, Button, Card, EmptyState, ErrorText, PageHeader } from "@/components/ui";
 
 export function MethodsPage() {
@@ -21,24 +21,24 @@ export function MethodsPage() {
     return m;
   }, [docs.data]);
 
-  // group methods by top-level norm body (UNI EN ISO 105 / AATCC / ASTM / Interni)
+  // group methods by top-level norm body (ISO 105 / AATCC / ASTM / Cuoio / Interni)
   const groups = useMemo(() => {
-    const rank = (g: string) =>
-      g === "UNI EN ISO 105" ? 0 : g === "AATCC" ? 1 : g === "ASTM" ? 2 : 9;
     const g = new Map<string, TestMethod[]>();
     for (const m of methods.data ?? []) {
       const k = normGroup(m.standard_family);
       (g.get(k) ?? g.set(k, []).get(k)!).push(m);
     }
     for (const list of g.values()) list.sort((a, b) => a.code.localeCompare(b.code));
-    return [...g.entries()].sort((a, b) => rank(a[0]) - rank(b[0]) || a[0].localeCompare(b[0]));
+    return [...g.entries()].sort(
+      (a, b) => groupRank(a[0]) - groupRank(b[0]) || a[0].localeCompare(b[0])
+    );
   }, [methods.data]);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Norme & Metodi"
-        subtitle="Catalogo dei metodi di prova (UNI EN ISO 105, AATCC, ASTM). Allega la TUA copia licenziata della norma di riferimento per ogni metodo — il documento non viene distribuito da noi."
+        subtitle="Catalogo dei metodi di prova (UNI EN ISO 105, AATCC, ASTM, cuoio ISO/IULTCS). Allega la TUA copia licenziata della norma di riferimento per ogni metodo — il documento non viene distribuito da noi."
       />
 
       <ErrorText error={methods.error || docs.error} />
