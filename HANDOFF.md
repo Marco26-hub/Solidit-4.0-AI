@@ -61,9 +61,13 @@ Monorepo attivo: `backend/` (FastAPI, Python 3.12) · `frontend/` (React+Vite+TS
 - **Validazione & accreditamento (dentro il software, auto-aggiornante)**:
   modulo `/validation` (campagne software-vs-riferimento + statistiche) +
   **report PDF di validazione** (`GET /validation-runs/{id}/report`) +
-  **checklist accreditabilità** `GET /accreditation/readiness` (calcolata live:
-  campagne+%entro±0.5, riferimenti validi, norme caricate, report bloccati,
-  + item off-software incertezza/consulente/scopo Accredia) con livello maturità.
+  **prove interlaboratorio/PT** `/proficiency-tests` (registra round, calcola
+  **z-score** = (x−X)/σ e **En** number, esito soddisfacente/discutibile/non
+  soddisfacente — requisito ISO 17025 7.7.2; il circuito è del provider esterno) +
+  **checklist accreditabilità** `GET /accreditation/readiness` (13 item calcolati
+  live: campagne+%entro±0.5, riferimenti validi, norme caricate, report bloccati,
+  PT soddisfacente, + item off-software incertezza/grading-validato/operatori/
+  consulente/scopo Accredia) con livello maturità.
 - **Verifica pubblica report**: QR del PDF → pagina pubblica `/verify/:id?h=<sha>`
   (no login) valido/non-valido; mirror RLS `report_verifications` (public read).
 - **Correzione colore certificata**: piastrina/target con Lab certificato →
@@ -75,14 +79,14 @@ Monorepo attivo: `backend/` (FastAPI, Python 3.12) · `frontend/` (React+Vite+TS
 - **GDPR**: export/delete endpoint + template legali in `docs/legal/`.
 - **Deploy**: `infra/Dockerfile.prod` (vision+storage), `render.yaml`,
   `infra/neon/setup_neon.sh`, storage **S3/R2** (`storage.py`, attivo con env).
-- **Migrazioni Alembic**: 0001→0014 (testa: `0014_leather_methods`).
+- **Migrazioni Alembic**: 0001→0015 (testa: `0015_proficiency_tests`).
 
 ### Migrazioni chiave
 `0001` schema completo+RLS · `0004` profili striscia · `0006` articoli+grading ·
 `0007` ISO 105 + method_documents · `0008` calibration references + blocco
 scadenze · `0009` report lock · `0010` validation samples · `0011` reference_values
 (Lab certificato) · `0012` AATCC/ASTM · `0013` report_verifications (verifica
-pubblica) · `0014` metodi cuoio.
+pubblica) · `0014` metodi cuoio · `0015` proficiency_tests (PT interlaboratorio).
 
 ## Setup locale
 
