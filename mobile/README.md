@@ -39,13 +39,20 @@ npm run typecheck       # after npm install (vision-camera types come from node_
 > `npm run typecheck` only resolves the camera/sensor types after `npm install`
 > (the deps are declared in package.json but not vendored).
 
+## Done
+
+- **Login + session**: `src/api/auth.ts` (login → token in `expo-secure-store`,
+  `restoreSession` on launch, logout) + real `LoginScreen`. `App.tsx` is an
+  auth-aware flow: Login → Home → Camera capture.
+
 ## TODO before field use
 
 - Frame processor (worklet) for real blur/exposure scoring → feed the gates.
 - ArUco/marker detection for geometry coherence (pairs with backend homography).
-- Secure token storage (`expo-secure-store`) + login + offline encrypted queue.
+- Offline encrypted capture queue.
 - Wire the capture config (test job, batch, method, references, grey-scale/strict
-  toggles) from the selected workflow into `CameraCaptureScreen`'s `config` prop.
+  toggles) from a job-selection screen into `CameraCaptureScreen`'s `config` prop
+  (today `App.tsx` opens it with a placeholder config).
 
 Hardware: iPhone 16 Pro+ recommended; 15 Pro/Pro Max with calibration. Non-Pro
 devices: consultation/barcode only, NOT Vision acquisition. Physical dima +
