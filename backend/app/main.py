@@ -25,6 +25,7 @@ from app.devices.router import router as devices_router
 from app.reports.router import router as reports_router
 from app.test_jobs.router import router as test_jobs_router
 from app.test_methods.router import router as test_methods_router
+from app.validation.router import router as validation_router
 
 configure_logging()
 
@@ -75,6 +76,7 @@ app.include_router(billing_router)
 app.include_router(captures_router)
 app.include_router(articles_router)
 app.include_router(calibration_router)
+app.include_router(validation_router)
 
 
 @app.get("/healthz", tags=["meta"])

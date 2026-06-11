@@ -15,6 +15,7 @@ from app.db.models.report import QualityReport, ReportSignature
 from app.db.models.strip import MultifiberStripProfile
 from app.db.models.testing import MeasurementResult, TestJob, TestMethod
 from app.db.models.user import User
+from app.db.models.validation import ValidationRun, ValidationSample
 
 __all__ = [
     "Article",
@@ -40,4 +41,6 @@ __all__ = [
     "TestJob",
     "TestMethod",
     "User",
+    "ValidationRun",
+    "ValidationSample",
 ]
