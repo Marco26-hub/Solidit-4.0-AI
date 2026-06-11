@@ -174,6 +174,29 @@ export interface CalibrationReference {
   created_at: string;
 }
 
+export interface ValidationRun {
+  id: string;
+  name: string | null;
+  status: string; // pending | computed
+  metrics: Record<string, number | string | boolean>;
+  created_at: string;
+}
+
+export interface ValidationSample {
+  id: string;
+  sample_code: string;
+  fiber: string | null;
+  reference_method: string;
+  software_grade: number | null;
+  reference_grade: number | null;
+  software_delta_e: number | null;
+  reference_delta_e: number | null;
+}
+
+export interface ValidationRunDetail extends ValidationRun {
+  samples: ValidationSample[];
+}
+
 export interface MeasurementResult {
   id: string;
   algorithm_version: string;

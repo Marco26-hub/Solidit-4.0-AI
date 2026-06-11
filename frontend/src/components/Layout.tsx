@@ -10,6 +10,7 @@ const NAV: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: "/batch-zero", label: "Batch", icon: "beaker" },
   { to: "/test-jobs", label: "Prove", icon: "clipboard" },
   { to: "/methods", label: "Norme", icon: "book" },
+  { to: "/validation", label: "Validazione", icon: "check" },
   { to: "/ledger", label: "Report", icon: "doc" },
   { to: "/devices", label: "Device", icon: "device" },
 ];
@@ -76,7 +77,7 @@ export function Layout() {
       </div>
 
       {/* mobile bottom nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-8 border-t border-slate-200 bg-white md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-9 border-t border-slate-200 bg-white md:hidden">
         {NAV.map((n) => (
           <NavLink
             key={n.to}

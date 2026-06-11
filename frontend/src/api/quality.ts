@@ -14,6 +14,9 @@ import type {
   StripProfile,
   TestJob,
   TestMethod,
+  ValidationRun,
+  ValidationRunDetail,
+  ValidationSample,
 } from "./types";
 
 // ── Brand specs ───────────────────────────────────────────────────────────────
@@ -97,6 +100,39 @@ export async function uploadCaptureImage(
 
 export const analyzeCaptureSession = (sessionId: string) =>
   apiFetch<MeasurementResult>(`/api/v1/capture-sessions/${sessionId}/analyze`, { method: "POST" });
+
+// ── Method validation (campaign vs spectrophotometer/lab) ────────────────────
+export const listValidationRuns = () =>
+  apiFetch<ValidationRun[]>("/api/v1/validation-runs");
+
+export const createValidationRun = (name: string) =>
+  apiFetch<ValidationRun>("/api/v1/validation-runs", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+
+export const getValidationRun = (id: string) =>
+  apiFetch<ValidationRunDetail>(`/api/v1/validation-runs/${id}`);
+
+export const addValidationSample = (
+  runId: string,
+  body: {
+    sample_code: string;
+    fiber?: string | null;
+    reference_method?: string;
+    software_grade?: number | null;
+    reference_grade?: number | null;
+    software_delta_e?: number | null;
+    reference_delta_e?: number | null;
+  }
+) =>
+  apiFetch<ValidationSample>(`/api/v1/validation-runs/${runId}/samples`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+
+export const computeValidationRun = (id: string) =>
+  apiFetch<ValidationRun>(`/api/v1/validation-runs/${id}/compute`, { method: "POST" });
 
 // ── Calibration references (instruments + validity) ──────────────────────────
 export const listCalibrationReferences = () =>

@@ -13,6 +13,7 @@ import { LedgerPage } from "@/features/certificate-ledger/LedgerPage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { DevicesPage } from "@/features/devices/DevicesPage";
 import { MethodsPage } from "@/features/methods/MethodsPage";
+import { ValidationPage } from "@/features/validation/ValidationPage";
 import { LoginPage } from "@/features/auth/LoginPage";
 import { TestJobsPage } from "@/features/test-jobs/TestJobsPage";
 import { AuthProvider } from "@/lib/auth";
@@ -33,6 +34,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                 <Route path="/batch-zero" element={<BatchZeroPage />} />
                 <Route path="/test-jobs" element={<TestJobsPage />} />
                 <Route path="/methods" element={<MethodsPage />} />
+                <Route path="/validation" element={<ValidationPage />} />
                 <Route path="/ledger" element={<LedgerPage />} />
                 <Route path="/devices" element={<DevicesPage />} />
               </Route>
