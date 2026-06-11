@@ -4,10 +4,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   addValidationSample,
   computeValidationRun,
+  createProficiencyTest,
   createValidationRun,
   downloadValidationReport,
   getAccreditationReadiness,
   getValidationRun,
+  listProficiencyTests,
   listValidationRuns,
 } from "@/api/quality";
 import { Badge, Button, Card, EmptyState, ErrorText, Field, PageHeader, TextInput } from "@/components/ui";
@@ -64,6 +66,8 @@ export function ValidationPage() {
           </div>
         </Card>
       )}
+
+      <ProficiencyCard />
 
       <Card>
         <div className="mb-3 font-medium">Nuova campagna</div>
@@ -276,5 +280,74 @@ function RunDetail({ runId }: { runId: string }) {
       </div>
       <ErrorText error={compute.error} />
     </div>
+  );
+}
+
+function ProficiencyCard() {
+  const qc = useQueryClient();
+  const pts = useQuery({ queryKey: ["proficiency"], queryFn: listProficiencyTests });
+  const [f, setF] = useState({ scheme: "", round: "", x: "", X: "", sigma: "" });
+
+  const add = useMutation({
+    mutationFn: () =>
+      createProficiencyTest({
+        scheme: f.scheme,
+        round_label: f.round,
+        result_x: Number(f.x),
+        assigned_value: Number(f.X),
+        std_dev: f.sigma === "" ? null : Number(f.sigma),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["proficiency"] });
+      qc.invalidateQueries({ queryKey: ["readiness"] });
+      setF({ scheme: "", round: "", x: "", X: "", sigma: "" });
+    },
+  });
+
+  const badge = (v: string) =>
+    v === "soddisfacente" ? ("pass" as const) : v === "discutibile" ? ("warn" as const) : v === "n/d" ? ("muted" as const) : ("fail" as const);
+
+  return (
+    <Card>
+      <div className="mb-1 font-medium">Prove interlaboratorio / PT</div>
+      <p className="mb-3 text-xs text-steel">
+        Registra l'esito di ogni round (provider esterno). z = (x − X)/σ: |z|≤2 soddisfacente,
+        2&lt;|z|&lt;3 discutibile, ≥3 non soddisfacente. Requisito ISO/IEC 17025 (7.7.2).
+      </p>
+      <ErrorText error={pts.error} />
+      <div className="divide-y">
+        {(pts.data ?? []).map((p) => (
+          <div key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+            <div>
+              <div className="font-medium">
+                {p.scheme} · {p.round_label}
+              </div>
+              <div className="text-xs text-steel">
+                x {p.result_x} vs X {p.assigned_value}
+                {p.z_score != null ? ` · z ${p.z_score}` : ""}
+                {p.en_number != null ? ` · En ${p.en_number}` : ""}
+              </div>
+            </div>
+            <Badge kind={badge(p.verdict)}>{p.verdict}</Badge>
+          </div>
+        ))}
+        {pts.data?.length === 0 && <p className="py-2 text-steel">Nessun round registrato.</p>}
+      </div>
+
+      <div className="mt-3 grid gap-2 md:grid-cols-6">
+        <TextInput placeholder="schema/provider" value={f.scheme} onChange={(e) => setF((s) => ({ ...s, scheme: e.target.value }))} />
+        <TextInput placeholder="round" value={f.round} onChange={(e) => setF((s) => ({ ...s, round: e.target.value }))} />
+        <TextInput type="number" step="0.01" placeholder="x (lab)" value={f.x} onChange={(e) => setF((s) => ({ ...s, x: e.target.value }))} />
+        <TextInput type="number" step="0.01" placeholder="X (assegnato)" value={f.X} onChange={(e) => setF((s) => ({ ...s, X: e.target.value }))} />
+        <TextInput type="number" step="0.01" placeholder="σ (SDPA)" value={f.sigma} onChange={(e) => setF((s) => ({ ...s, sigma: e.target.value }))} />
+        <Button
+          disabled={!f.scheme || !f.round || f.x === "" || f.X === "" || add.isPending}
+          onClick={() => add.mutate()}
+        >
+          {add.isPending ? "…" : "+ round"}
+        </Button>
+      </div>
+      <ErrorText error={add.error} />
+    </Card>
   );
 }

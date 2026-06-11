@@ -17,6 +17,7 @@ from app.calibration.service import compute_validity
 from app.db.models import (
     CalibrationReference,
     MethodDocument,
+    ProficiencyTest,
     QualityReport,
     ValidationRun,
 )
@@ -63,6 +64,17 @@ async def readiness(session: AsyncSession, company_id: uuid.UUID) -> dict:
         )
     ).scalar_one()
 
+    pts = list(
+        (
+            await session.execute(
+                select(ProficiencyTest).where(ProficiencyTest.company_id == company_id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    pt_ok = sum(1 for p in pts if p.verdict == "soddisfacente")
+
     def item(key, label, status, detail):
         return {"key": key, "label": label, "status": status, "detail": detail}
 
@@ -100,6 +112,12 @@ async def readiness(session: AsyncSession, company_id: uuid.UUID) -> dict:
             "Report ufficiali emessi (finalizzati)",
             "done" if locked_reports else "todo",
             f"{locked_reports} report bloccati",
+        ),
+        item(
+            "proficiency",
+            "Prove interlaboratorio / PT (esito soddisfacente)",
+            "done" if pt_ok else ("partial" if pts else "todo"),
+            f"{pt_ok}/{len(pts)} round soddisfacenti",
         ),
         # off-software (the lab/consultant must do these)
         item("uncertainty", "Incertezza stimata", "todo", "da redigere dopo validazione"),

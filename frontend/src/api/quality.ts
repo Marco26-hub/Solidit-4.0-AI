@@ -149,6 +149,36 @@ export interface Readiness {
 export const getAccreditationReadiness = () =>
   apiFetch<Readiness>("/api/v1/accreditation/readiness");
 
+export interface ProficiencyTest {
+  id: string;
+  scheme: string;
+  round_label: string;
+  parameter: string | null;
+  result_x: number;
+  assigned_value: number;
+  std_dev: number | null;
+  z_score: number | null;
+  en_number: number | null;
+  verdict: string;
+  test_date: string | null;
+}
+export const listProficiencyTests = () =>
+  apiFetch<ProficiencyTest[]>("/api/v1/proficiency-tests");
+export const createProficiencyTest = (body: {
+  scheme: string;
+  round_label: string;
+  parameter?: string | null;
+  result_x: number;
+  assigned_value: number;
+  std_dev?: number | null;
+  u_lab?: number | null;
+  u_ref?: number | null;
+}) =>
+  apiFetch<ProficiencyTest>("/api/v1/proficiency-tests", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+
 export async function downloadValidationReport(id: string): Promise<Blob> {
   const token = getAccessToken();
   const res = await fetch(`${API_BASE}/api/v1/validation-runs/${id}/report`, {
