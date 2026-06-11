@@ -3,11 +3,14 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, Depends, status
+from fastapi.responses import StreamingResponse
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.audit import record_audit
 from app.common.deps import Principal, get_db, get_tenant_principal, require_role
-from app.db.models import ValidationRun
+from app.common.errors import AppError
+from app.db.models import Company, ValidationRun
 from app.validation import service
 from app.validation.schemas import (
     ValidationRunCreate,
@@ -88,6 +91,47 @@ async def add_sample(
 ) -> ValidationSampleOut:
     sample = await service.add_sample(session, principal.company_id, run_id, data)
     return ValidationSampleOut.model_validate(sample)
+
+
+@router.get("/{run_id}/report")
+async def validation_report(
+    run_id: uuid.UUID,
+    principal: Principal = Depends(get_tenant_principal),
+    session: AsyncSession = Depends(get_db),
+) -> StreamingResponse:
+    from io import BytesIO
+
+    from app.validation.pdf import build_validation_pdf
+
+    run = await service.get_run(session, principal.company_id, run_id)
+    if run.status != "computed":
+        raise AppError("Calcola le statistiche prima di generare il report.", code="not_computed")
+    samples = await service.list_samples(session, principal.company_id, run_id)
+    company = (
+        await session.execute(select(Company).where(Company.id == principal.company_id))
+    ).scalar_one()
+    pdf = build_validation_pdf(
+        run_name=run.dataset_ref or "campagna",
+        company_name=company.name,
+        samples=[
+            {
+                "sample_code": s.sample_code,
+                "fiber": s.fiber,
+                "reference_method": s.reference_method,
+                "software_grade": float(s.software_grade) if s.software_grade is not None else None,
+                "reference_grade": float(s.reference_grade)
+                if s.reference_grade is not None
+                else None,
+            }
+            for s in samples
+        ],
+        metrics=run.metrics or {},
+    )
+    return StreamingResponse(
+        BytesIO(pdf),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="validazione-{run_id}.pdf"'},
+    )
 
 
 @router.post("/{run_id}/compute", response_model=ValidationRunOut)

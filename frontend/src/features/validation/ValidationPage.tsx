@@ -5,6 +5,8 @@ import {
   addValidationSample,
   computeValidationRun,
   createValidationRun,
+  downloadValidationReport,
+  getAccreditationReadiness,
   getValidationRun,
   listValidationRuns,
 } from "@/api/quality";
@@ -16,13 +18,19 @@ export function ValidationPage() {
   const [name, setName] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
 
+  const readiness = useQuery({ queryKey: ["readiness"], queryFn: getAccreditationReadiness });
+
   const create = useMutation({
     mutationFn: () => createValidationRun(name),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["validation-runs"] });
+      qc.invalidateQueries({ queryKey: ["readiness"] });
       setName("");
     },
   });
+
+  const statusBadge = (s: string) =>
+    s === "done" ? ("pass" as const) : s === "partial" ? ("warn" as const) : ("muted" as const);
 
   return (
     <div className="space-y-6">
@@ -30,6 +38,32 @@ export function ValidationPage() {
         title="Validazione metodo"
         subtitle="Campagne di confronto del software vs riferimento (spettrofotometro / valutazione esperta / laboratorio esterno). È il documento di credibilità per l'accreditamento ISO/IEC 17025."
       />
+
+      {readiness.data && (
+        <Card>
+          <div className="mb-1 flex items-center justify-between">
+            <span className="font-medium">Stato verso l'accreditamento</span>
+            <Badge kind="warn">{readiness.data.level}</Badge>
+          </div>
+          <div className="mb-2 text-xs text-steel">
+            {readiness.data.done}/{readiness.data.total} requisiti soddisfatti. L'accreditamento è
+            concesso da Accredia (lab + consulente + scopo), non dal software.
+          </div>
+          <div className="space-y-1">
+            {readiness.data.items.map((it) => (
+              <div key={it.key} className="flex items-center justify-between gap-2 text-sm">
+                <span>{it.label}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-steel">{it.detail}</span>
+                  <Badge kind={statusBadge(it.status)}>
+                    {it.status === "done" ? "ok" : it.status === "partial" ? "parziale" : "manca"}
+                  </Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <Card>
         <div className="mb-3 font-medium">Nuova campagna</div>
@@ -216,6 +250,22 @@ function RunDetail({ runId }: { runId: string }) {
         <Button variant="ghost" disabled={compute.isPending} onClick={() => compute.mutate()}>
           {compute.isPending ? "…" : "Calcola statistiche"}
         </Button>
+        {detail.data?.status === "computed" && (
+          <Button
+            variant="ghost"
+            onClick={async () => {
+              const blob = await downloadValidationReport(runId);
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `validazione-${runId}.pdf`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+          >
+            Scarica report PDF
+          </Button>
+        )}
         {detail.data?.status === "computed" && (
           <div className="text-xs text-steel">
             n={m["scored"]} · {m["pct_within_half_grade"]}% entro ±0.5 · scarto medio{" "}

@@ -134,6 +134,30 @@ export const addValidationSample = (
 export const computeValidationRun = (id: string) =>
   apiFetch<ValidationRun>(`/api/v1/validation-runs/${id}/compute`, { method: "POST" });
 
+export interface ReadinessItem {
+  key: string;
+  label: string;
+  status: "done" | "partial" | "todo";
+  detail: string;
+}
+export interface Readiness {
+  level: string;
+  done: number;
+  total: number;
+  items: ReadinessItem[];
+}
+export const getAccreditationReadiness = () =>
+  apiFetch<Readiness>("/api/v1/accreditation/readiness");
+
+export async function downloadValidationReport(id: string): Promise<Blob> {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE}/api/v1/validation-runs/${id}/report`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error(`Report fallito (${res.status})`);
+  return res.blob();
+}
+
 // ── Calibration references (instruments + validity) ──────────────────────────
 export const listCalibrationReferences = () =>
   apiFetch<CalibrationReference[]>("/api/v1/calibration-references");

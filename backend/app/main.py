@@ -8,6 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
+from app.accreditation.router import router as accreditation_router
 from app.account.router import router as account_router
 from app.articles.router import router as articles_router
 from app.auth.router import router as auth_router
@@ -79,6 +80,7 @@ app.include_router(captures_router)
 app.include_router(articles_router)
 app.include_router(calibration_router)
 app.include_router(validation_router)
+app.include_router(accreditation_router)
 
 
 @app.get("/healthz", tags=["meta"])
