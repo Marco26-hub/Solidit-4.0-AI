@@ -5,6 +5,9 @@ let accessToken: string | null = null;
 export function setAccessToken(t: string | null) {
   accessToken = t;
 }
+export function getAccessToken(): string | null {
+  return accessToken;
+}
 
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
