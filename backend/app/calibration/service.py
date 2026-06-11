@@ -58,6 +58,7 @@ async def create_reference(
         certificate_number=data.certificate_number,
         valid_from=data.valid_from,
         valid_until=data.valid_until,
+        reference_values=data.reference_values.model_dump() if data.reference_values else None,
     )
     session.add(ref)
     await session.flush()

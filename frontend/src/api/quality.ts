@@ -145,6 +145,7 @@ export const createCalibrationReference = (body: {
   certificate_number?: string | null;
   valid_from?: string | null;
   valid_until?: string | null;
+  reference_values?: { L: number; a: number; b: number } | null;
 }) =>
   apiFetch<CalibrationReference>("/api/v1/calibration-references", {
     method: "POST",

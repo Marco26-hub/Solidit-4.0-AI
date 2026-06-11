@@ -233,6 +233,30 @@ async def _resolve_thresholds(
     return DEFAULT_STAINING_THRESHOLDS, "EXAMPLE_DEFAULT"
 
 
+async def _certified_white_lab(
+    session: AsyncSession, company_id: uuid.UUID, cs: CaptureSession
+) -> list[float] | None:
+    """Certified CIELAB of the linked white-tile / grey-scale reference (if it
+    carries certified values) — anchors the in-frame correction to the certificate."""
+    from app.db.models import CalibrationReference
+
+    rid = cs.white_tile_ref_id or cs.grey_scale_ref_id
+    if rid is None:
+        return None
+    ref = (
+        await session.execute(
+            select(CalibrationReference).where(
+                CalibrationReference.id == rid,
+                CalibrationReference.company_id == company_id,
+            )
+        )
+    ).scalar_one_or_none()
+    vals = ref.reference_values if ref else None
+    if vals and all(k in vals for k in ("L", "a", "b")):
+        return [float(vals["L"]), float(vals["a"]), float(vals["b"])]
+    return None
+
+
 async def _reference_provenance(
     session: AsyncSession, company_id: uuid.UUID, cs: CaptureSession
 ) -> tuple[dict, list[str]]:
@@ -312,6 +336,7 @@ async def _analyze_staining(
     from app.vision.pipeline import analyze_multifiber
 
     grey = bool((cs.telemetry or {}).get("inframe_grey_scale"))
+    white_lab = await _certified_white_lab(session, company_id, cs) if grey else None
     # newest image is the primary result; the rest provide repeatability
     replicate_visions = [
         analyze_multifiber(
@@ -320,6 +345,7 @@ async def _analyze_staining(
             reference,
             thresholds=thresholds,
             grey_scale=grey,
+            white_reference_lab=white_lab,
         )
         for im in imgs
     ]

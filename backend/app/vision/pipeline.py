@@ -32,11 +32,14 @@ def analyze_multifiber(
     color_matrix: Any = None,
     thresholds: list[dict] | None = None,
     grey_scale: bool = False,
+    white_reference_lab: list[float] | None = None,
 ) -> dict[str, Any]:
     """fibers: ordered fibre codes (from the strip profile).
     reference_lab: {fiber: {"L":..,"a":..,"b":..}} — the unstained reference.
     grey_scale: when True, look for an in-frame neutral reference and white-balance
-    the image with it (ISO 105-A11 in-frame colour correction)."""
+    the image with it (ISO 105-A11 in-frame colour correction).
+    white_reference_lab: certified CIELAB of the in-frame white tile — when given,
+    the correction anchors to it (traceable) instead of self-neutralising."""
     import numpy as np
     from PIL import Image
 
@@ -51,13 +54,26 @@ def analyze_multifiber(
         arr = apply_color_matrix(arr, color_matrix)
         colour_correction = "device_matrix"
     elif grey_scale:
-        from app.vision.grey_scale import find_neutral_reference, neutral_white_balance
+        from app.vision.grey_scale import (
+            find_neutral_reference,
+            neutral_white_balance,
+            white_balance_to_certified,
+        )
 
-        ref = find_neutral_reference(arr)
+        # with a certified white we anchor by BRIGHTNESS (the tile may read
+        # off-neutral under a colour cast); without it we require true neutrality
+        ref = find_neutral_reference(
+            arr, max_chroma_ratio=0.4 if white_reference_lab is not None else 0.06
+        )
         if ref is not None:
-            arr = neutral_white_balance(arr, ref["rgb"])
-            colour_correction = "in_frame_grey_scale"
-            grey_flags.update(detected=True, reference=ref)
+            if white_reference_lab is not None:
+                arr = white_balance_to_certified(arr, ref["rgb"], white_reference_lab)
+                colour_correction = "in_frame_certified_white"
+                grey_flags.update(detected=True, reference=ref, certified_lab=white_reference_lab)
+            else:
+                arr = neutral_white_balance(arr, ref["rgb"])
+                colour_correction = "in_frame_grey_scale"
+                grey_flags.update(detected=True, reference=ref)
         else:
             colour_correction = "none"
             pipeline_warnings.append(

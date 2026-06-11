@@ -72,3 +72,29 @@ def neutral_white_balance(image_rgb: Any, white_rgb: list[float]) -> Any:
     gains = np.clip(target / np.clip(w, 1.0, None), 0.5, 2.0)
     out = np.clip(arr[:, :, :3].astype(np.float64) * gains, 0, 255)
     return out.astype(np.uint8)
+
+
+def lab_to_rgb255(lab: list[float]) -> list[float]:
+    """CIELAB -> sRGB 0..255 (the certified white expressed in camera-comparable RGB)."""
+    import numpy as np
+    from skimage import color
+
+    rgb = color.lab2rgb(np.asarray([[lab]], dtype=np.float64))[0, 0]
+    return [float(np.clip(c * 255.0, 0, 255)) for c in rgb]
+
+
+def white_balance_to_certified(
+    image_rgb: Any, measured_white_rgb: list[float], certified_lab: list[float]
+) -> Any:
+    """Anchor the measured in-frame neutral patch to a CERTIFIED reference colour.
+    Per-channel gain maps measured_white -> the certified white's sRGB, so the
+    correction is traceable to the reference's certificate (not self-assumed
+    neutral). Gains clamped to [0.4, 2.5]. Returns uint8."""
+    import numpy as np
+
+    arr = np.asarray(image_rgb)
+    measured = np.clip(np.asarray(measured_white_rgb, dtype=np.float64), 1.0, None)
+    target = np.asarray(lab_to_rgb255(certified_lab), dtype=np.float64)
+    gains = np.clip(target / measured, 0.4, 2.5)
+    out = np.clip(arr[:, :, :3].astype(np.float64) * gains, 0, 255)
+    return out.astype(np.uint8)

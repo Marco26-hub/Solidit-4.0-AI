@@ -26,6 +26,7 @@ def _out(ref: CalibrationReference) -> CalibrationReferenceOut:
         valid_from=ref.valid_from,
         valid_until=ref.valid_until,
         status=ref.status,
+        reference_values=ref.reference_values,
         validity=service.compute_validity(ref),
         created_at=ref.created_at,
     )

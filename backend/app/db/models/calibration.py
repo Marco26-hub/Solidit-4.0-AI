@@ -37,6 +37,9 @@ class CalibrationReference(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     valid_from: Mapped[dt.date | None] = mapped_column(Date)
     valid_until: Mapped[dt.date | None] = mapped_column(Date)
     status: Mapped[str] = mapped_column(Text, nullable=False, server_default="active")
+    # certified colour coordinates (CIELAB) for a white tile / colour target —
+    # used to anchor the in-frame colour correction to the reference's certificate
+    reference_values: Mapped[dict | None] = mapped_column(JSONB)
     meta: Mapped[dict] = mapped_column(
         "metadata", JSONB, nullable=False, server_default=text("'{}'::jsonb")
     )

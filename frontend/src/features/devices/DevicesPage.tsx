@@ -110,20 +110,29 @@ function CalibrationReferences() {
   const [code, setCode] = useState("");
   const [cert, setCert] = useState("");
   const [validUntil, setValidUntil] = useState("");
+  const [lab, setLab] = useState({ L: "", a: "", b: "" });
+  const showLab = kind === "white_tile" || kind === "colour_target";
 
   const create = useMutation({
-    mutationFn: () =>
-      createCalibrationReference({
+    mutationFn: () => {
+      const rv =
+        showLab && lab.L !== "" && lab.a !== "" && lab.b !== ""
+          ? { L: Number(lab.L), a: Number(lab.a), b: Number(lab.b) }
+          : null;
+      return createCalibrationReference({
         kind,
         code,
         certificate_number: cert || null,
         valid_until: validUntil || null,
-      }),
+        reference_values: rv,
+      });
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["calref"] });
       setCode("");
       setCert("");
       setValidUntil("");
+      setLab({ L: "", a: "", b: "" });
     },
   });
 
@@ -194,6 +203,25 @@ function CalibrationReferences() {
           <TextInput type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} />
         </Field>
       </div>
+      {showLab && (
+        <div className="mt-3">
+          <div className="text-xs text-steel">
+            Lab certificato (da certificato del riferimento) — àncora la correzione colore in-frame.
+          </div>
+          <div className="mt-1 grid grid-cols-3 gap-2 sm:max-w-xs">
+            {(["L", "a", "b"] as const).map((k) => (
+              <TextInput
+                key={k}
+                type="number"
+                step="0.01"
+                placeholder={`cert. ${k}`}
+                value={lab[k]}
+                onChange={(e) => setLab((s) => ({ ...s, [k]: e.target.value }))}
+              />
+            ))}
+          </div>
+        </div>
+      )}
       <div className="mt-3">
         <Button type="button" disabled={!code || create.isPending} onClick={() => create.mutate()}>
           {create.isPending ? "…" : "Aggiungi riferimento"}
