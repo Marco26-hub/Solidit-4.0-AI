@@ -1,0 +1,40 @@
+# Render Blueprint — Solidità 4.0 backend (FastAPI) with Neon Postgres + S3 storage.
+# Frontend deploys separately on Vercel (see DEPLOY.md). The database is external
+# (Neon) — set DATABASE_URL to the solidita_app (non-superuser) connection string.
+#
+# Deploy: push to GitHub, then Render → New → Blueprint → pick this repo.
+services:
+  - type: web
+    name: solidita-backend
+    runtime: docker
+    dockerfilePath: ./infra/Dockerfile.prod
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /healthz
+    # run migrations once before each deploy goes live
+    preDeployCommand: python -m alembic upgrade head
+    # env var names match the pydantic-settings fields (case-insensitive)
+    envVars:
+      - key: DATABASE_URL
+        sync: false # Neon solidita_app URL (postgresql+asyncpg://...)
+      - key: MIGRATION_DATABASE_URL
+        sync: false # Neon owner URL for Alembic (postgresql+asyncpg://...)
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: APP_ENV
+        value: production
+      - key: CORS_ORIGINS
+        sync: false # e.g. https://solidita.vercel.app
+      - key: PUBLIC_BASE_URL
+        sync: false # e.g. https://solidita-backend.onrender.com
+      # object storage (Cloudflare R2 / AWS S3 / Backblaze B2)
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_ENDPOINT_URL
+        sync: false # omit for AWS S3; set for R2/B2/MinIO
+      - key: S3_REGION
+        value: auto
+      - key: S3_ACCESS_KEY
+        sync: false
+      - key: S3_SECRET_KEY
+        sync: false

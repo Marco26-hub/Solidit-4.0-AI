@@ -1,0 +1,22 @@
+# Production backend image: includes the vision engine + S3 storage extras.
+# numpy/scipy/scikit-image/Pillow/boto3 ship manylinux wheels, so no compiler
+# toolchain is needed on python:3.12-slim.
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+# deps first for layer caching
+COPY backend/pyproject.toml ./
+RUN pip install --upgrade pip && pip install -e ".[vision,storage]"
+
+# app code
+COPY backend/ ./
+
+EXPOSE 8000
+
+# honour the platform's $PORT (Render/Railway/Fly set it); default 8000
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
