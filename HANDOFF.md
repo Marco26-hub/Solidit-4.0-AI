@@ -58,13 +58,31 @@ Monorepo attivo: `backend/` (FastAPI, Python 3.12) · `frontend/` (React+Vite+TS
   colour-change, riferimenti strumenti, toggle in-frame grey-scale e strict),
   Norme (catalogo + upload norma), Report ledger (verifica/finalizza/PDF),
   Device (+ registro tarature). Silent token refresh.
+- **Validazione & accreditamento (dentro il software, auto-aggiornante)**:
+  modulo `/validation` (campagne software-vs-riferimento + statistiche) +
+  **report PDF di validazione** (`GET /validation-runs/{id}/report`) +
+  **checklist accreditabilità** `GET /accreditation/readiness` (calcolata live:
+  campagne+%entro±0.5, riferimenti validi, norme caricate, report bloccati,
+  + item off-software incertezza/consulente/scopo Accredia) con livello maturità.
+- **Verifica pubblica report**: QR del PDF → pagina pubblica `/verify/:id?h=<sha>`
+  (no login) valido/non-valido; mirror RLS `report_verifications` (public read).
+- **Correzione colore certificata**: piastrina/target con Lab certificato →
+  white-balance ancorato al certificato (`in_frame_certified_white`).
+- **Catalogo norme**: UNI EN ISO 105 (E/C/D/B/N/P/X) + AATCC (15/107/162/16/132/
+  133/188/EP1/EP2, con equivalente ISO) + ASTM (D2244/E313) + **cuoio**
+  (ISO 11640/11641/11642/15700/17700 + IULTCS IUF 421/426/434). Menu raggruppato
+  per ente: UNI EN ISO 105 / AATCC / ASTM / Cuoio (ISO/IULTCS) / Interni.
 - **GDPR**: export/delete endpoint + template legali in `docs/legal/`.
-- **Migrazioni Alembic**: 0001→0010 (testa: `0010_validation_samples`).
+- **Deploy**: `infra/Dockerfile.prod` (vision+storage), `render.yaml`,
+  `infra/neon/setup_neon.sh`, storage **S3/R2** (`storage.py`, attivo con env).
+- **Migrazioni Alembic**: 0001→0014 (testa: `0014_leather_methods`).
 
 ### Migrazioni chiave
-`0001` schema completo+RLS · `0004` profili striscia · `0006` articoli+grading
-profiles · `0007` catalogo ISO 105 + method_documents · `0008` calibration
-references + blocco scadenze · `0009` report lock · `0010` validation samples.
+`0001` schema completo+RLS · `0004` profili striscia · `0006` articoli+grading ·
+`0007` ISO 105 + method_documents · `0008` calibration references + blocco
+scadenze · `0009` report lock · `0010` validation samples · `0011` reference_values
+(Lab certificato) · `0012` AATCC/ASTM · `0013` report_verifications (verifica
+pubblica) · `0014` metodi cuoio.
 
 ## Setup locale
 
@@ -74,7 +92,7 @@ cd backend && pip install -e ".[vision]"
 python -m alembic upgrade head
 uvicorn app.main:app --port 8000
 cd ../frontend && npm i && npm run dev   # VITE_API_BASE=http://localhost:8000
-pytest backend  # 62 verdi (serve Postgres)
+pytest backend  # 65 verdi (serve Postgres)
 ```
 
 Deploy: vedi **DEPLOY.md** (frontend su Vercel root=`frontend`; backend su
@@ -83,13 +101,18 @@ con ruolo non-superuser).
 
 ## Cosa resta (in ordine)
 
-1. **UI Validazione** (pagina campagne + inserimento campioni + metriche).
-2. **Fascicolo tecnico/SOP** (template: SOP acquisizione, tarature, analisi,
-   report, formazione, non-conformità, registro strumenti/versioni).
-3. **Deploy produzione**: backend host + **S3 storage** (LocalStorage è solo
-   dev) + Stripe attivo + email transazionali + backup/observability.
-4. Hardening vision: marker ArUco + omografia (OpenCV), worker async.
-5. App iOS nativa di cattura (vedi sotto "Mobile").
+1. **Deploy live** (codice 100% pronto): creare progetto **Neon** → lanciare
+   `infra/neon/setup_neon.sh` (crea ruolo `solidita_app` + migra + verifica RLS);
+   bucket **S3/R2** per le foto; backend su **Render** (`render.yaml`); frontend
+   su **Vercel** (root=`frontend`). Vedi `DEPLOY.md`.
+2. **Billing Stripe** attivo (checkout + webhook + gating; tabella `subscriptions`
+   esiste, flusso pagamento no) + email transazionali + observability/backup.
+3. **App iOS nativa** — completare oltre login/camera: frame-processor blur/
+   esposizione (worklet), marker ArUco, coda offline, schermata selezione job
+   che passa il `config` a `CameraCaptureScreen`. Poi Apple Developer + IAP +
+   TestFlight (vedi "Mobile").
+4. Hardening vision: marker ArUco + **omografia** (OpenCV), worker async per
+   vision/PDF/email.
 
 ### Non-codice (bloccanti accreditamento — responsabilità business)
 - Campioni reali 30→50→100 + confronto spettrofotometro/lab.
