@@ -11,7 +11,7 @@ from app.db.models.capture import CaptureSession, ImageAsset
 from app.db.models.company import Company, CompanyMembership, Department
 from app.db.models.device import Device
 from app.db.models.method_document import MethodDocument
-from app.db.models.report import QualityReport, ReportSignature
+from app.db.models.report import QualityReport, ReportSignature, ReportVerification
 from app.db.models.strip import MultifiberStripProfile
 from app.db.models.testing import MeasurementResult, TestJob, TestMethod
 from app.db.models.user import User
@@ -37,6 +37,7 @@ __all__ = [
     "QualityReport",
     "RefreshToken",
     "ReportSignature",
+    "ReportVerification",
     "Subscription",
     "TestJob",
     "TestMethod",

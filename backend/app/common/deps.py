@@ -70,6 +70,16 @@ async def get_db(principal: Principal = Depends(get_principal)) -> AsyncIterator
             yield session
 
 
+async def get_public_db() -> AsyncIterator[AsyncSession]:
+    """Unauthenticated session — NO tenant context set. Only rows under an RLS
+    policy that permits anonymous reads (e.g. report_verifications USING true) are
+    visible; every tenant table returns nothing because app_current_company_id()
+    is NULL. Used by public, non-sensitive endpoints."""
+    async with SessionLocal() as session:
+        async with session.begin():
+            yield session
+
+
 async def get_tenant_principal(principal: Principal = Depends(get_principal)) -> Principal:
     """Require that a tenant (company) is selected in the token."""
     if principal.company_id is None:

@@ -294,6 +294,24 @@ export const verifyReport = (reportId: string) =>
 export const finalizeReport = (reportId: string) =>
   apiFetch<Report>(`/api/v1/reports/${reportId}/finalize`, { method: "POST" });
 
+export interface PublicVerify {
+  valid: boolean;
+  report_number?: string | null;
+  company_name?: string | null;
+  issued_at?: string | null;
+  locked?: boolean | null;
+  sha256_hash?: string | null;
+}
+
+/** Unauthenticated report verification (the report QR points to this). */
+export async function publicVerifyReport(reportId: string, hash: string): Promise<PublicVerify> {
+  const res = await fetch(
+    `${API_BASE}/api/v1/public/reports/${reportId}/verify?h=${encodeURIComponent(hash)}`
+  );
+  if (!res.ok) throw new Error(`Verifica fallita (${res.status})`);
+  return res.json();
+}
+
 export const downloadReportUrl = (reportId: string) =>
   `${import.meta.env.VITE_API_BASE ?? "http://localhost:8000"}/api/v1/reports/${reportId}/download`;
 

@@ -42,6 +42,8 @@ class Settings(BaseSettings):
 
     # Public base URL (used in report QR verify links)
     public_base_url: str = "http://localhost:8000"
+    # Frontend web URL (the public report-verification page the QR points to)
+    web_base_url: str = "http://localhost:5173"
 
     # Object storage (used from Sprint 3+)
     s3_endpoint_url: str | None = None

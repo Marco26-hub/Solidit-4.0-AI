@@ -14,6 +14,7 @@ import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { DevicesPage } from "@/features/devices/DevicesPage";
 import { MethodsPage } from "@/features/methods/MethodsPage";
 import { ValidationPage } from "@/features/validation/ValidationPage";
+import { VerifyPage } from "@/features/verify/VerifyPage";
 import { LoginPage } from "@/features/auth/LoginPage";
 import { TestJobsPage } from "@/features/test-jobs/TestJobsPage";
 import { AuthProvider } from "@/lib/auth";
@@ -26,6 +27,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/verify/:id" element={<VerifyPage />} />
             <Route element={<ProtectedRoute />}>
               <Route element={<Layout />}>
                 <Route index element={<DashboardPage />} />

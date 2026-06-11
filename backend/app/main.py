@@ -22,6 +22,7 @@ from app.companies.router import router as companies_router
 from app.config import settings
 from app.departments.router import router as departments_router
 from app.devices.router import router as devices_router
+from app.reports.public_router import router as public_reports_router
 from app.reports.router import router as reports_router
 from app.test_jobs.router import router as test_jobs_router
 from app.test_methods.router import router as test_methods_router
@@ -71,6 +72,7 @@ app.include_router(batches_router)
 app.include_router(test_methods_router)
 app.include_router(test_jobs_router)
 app.include_router(reports_router)
+app.include_router(public_reports_router)
 app.include_router(account_router)
 app.include_router(billing_router)
 app.include_router(captures_router)

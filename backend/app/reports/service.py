@@ -17,6 +17,7 @@ from app.db.models import (
     MeasurementResult,
     QualityReport,
     ReportSignature,
+    ReportVerification,
 )
 from app.reports.pdf import build_report_pdf
 from app.test_jobs.service import get_test_job
@@ -126,7 +127,8 @@ async def generate_report(
     }
 
     sha = canonical_hash(payload)
-    verify_url = f"{settings.public_base_url}/api/v1/reports/{report_id}/verify"
+    # QR points to the PUBLIC verification page (anyone can check authenticity)
+    verify_url = f"{settings.web_base_url}/verify/{report_id}?h={sha}"
     pdf_bytes = build_report_pdf(payload, sha, verify_url)
 
     storage_key = f"reports/{company_id}/{report_id}.pdf"
@@ -152,6 +154,16 @@ async def generate_report(
             sha256_hash=sha,
         )
     )
+    # public verification mirror (non-sensitive fields, readable without auth)
+    session.add(
+        ReportVerification(
+            report_id=report_id,
+            company_id=company_id,
+            report_number=report_number,
+            sha256_hash=sha,
+            company_name=company.name,
+        )
+    )
     await session.flush()
     return report
 
@@ -165,8 +177,36 @@ async def finalize_report(
         return report
     report.status = "locked"
     report.locked_at = datetime.now(UTC)
+    ver = (
+        await session.execute(
+            select(ReportVerification).where(ReportVerification.report_id == report_id)
+        )
+    ).scalar_one_or_none()
+    if ver is not None:
+        ver.locked = True
     await session.flush()
     return report
+
+
+async def public_verify(session: AsyncSession, report_id: uuid.UUID, given_hash: str) -> dict:
+    """Unauthenticated verification: confirm a report's integrity from the QR.
+    Returns non-sensitive fields only. valid=True iff the report exists AND the
+    supplied hash matches the stored seal (so ids alone can't be enumerated)."""
+    ver = (
+        await session.execute(
+            select(ReportVerification).where(ReportVerification.report_id == report_id)
+        )
+    ).scalar_one_or_none()
+    if ver is None or not given_hash or given_hash.lower() != ver.sha256_hash.lower():
+        return {"valid": False}
+    return {
+        "valid": True,
+        "report_number": ver.report_number,
+        "company_name": ver.company_name,
+        "issued_at": ver.issued_at.isoformat(),
+        "locked": ver.locked,
+        "sha256_hash": ver.sha256_hash,
+    }
 
 
 async def list_reports(
