@@ -8,6 +8,7 @@ import {
   uploadMethodDocument,
 } from "@/api/quality";
 import type { TestMethod } from "@/api/types";
+import { normGroup } from "@/components/MethodSelect";
 import { Badge, Button, Card, EmptyState, ErrorText, PageHeader } from "@/components/ui";
 
 export function MethodsPage() {
@@ -20,14 +21,17 @@ export function MethodsPage() {
     return m;
   }, [docs.data]);
 
-  // group methods by standard family for readability
+  // group methods by top-level norm body (UNI EN ISO 105 / AATCC / ASTM / Interni)
   const groups = useMemo(() => {
+    const rank = (g: string) =>
+      g === "UNI EN ISO 105" ? 0 : g === "AATCC" ? 1 : g === "ASTM" ? 2 : 9;
     const g = new Map<string, TestMethod[]>();
     for (const m of methods.data ?? []) {
-      const k = m.standard_family ?? "altro";
+      const k = normGroup(m.standard_family);
       (g.get(k) ?? g.set(k, []).get(k)!).push(m);
     }
-    return [...g.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    for (const list of g.values()) list.sort((a, b) => a.code.localeCompare(b.code));
+    return [...g.entries()].sort((a, b) => rank(a[0]) - rank(b[0]) || a[0].localeCompare(b[0]));
   }, [methods.data]);
 
   return (

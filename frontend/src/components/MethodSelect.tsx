@@ -2,12 +2,21 @@ import { useMemo } from "react";
 
 import type { TestMethod } from "@/api/types";
 
-/** Family display order: ISO series first, then AATCC, ASTM, internal/other last. */
-function familyRank(fam: string): number {
-  if (fam.startsWith("ISO")) return 0;
-  if (fam.startsWith("AATCC")) return 1;
-  if (fam.startsWith("ASTM")) return 2;
-  return 9; // internal / other
+/** Collapse the fine standard_family label into one of the top-level norm bodies. */
+export function normGroup(fam: string | null | undefined): string {
+  const f = (fam ?? "").toUpperCase();
+  if (f.includes("AATCC")) return "AATCC";
+  if (f.includes("ASTM")) return "ASTM";
+  if (f.includes("ISO")) return "UNI EN ISO 105";
+  return "Interni";
+}
+
+/** Display order of the norm bodies. */
+function groupRank(g: string): number {
+  if (g === "UNI EN ISO 105") return 0;
+  if (g === "AATCC") return 1;
+  if (g === "ASTM") return 2;
+  return 9;
 }
 
 /**
@@ -32,12 +41,13 @@ export function MethodSelect({
   const groups = useMemo(() => {
     const g = new Map<string, TestMethod[]>();
     for (const m of methods) {
-      const k = m.standard_family ?? "Altro";
+      const k = normGroup(m.standard_family);
       if (!g.has(k)) g.set(k, []);
       g.get(k)!.push(m);
     }
+    for (const list of g.values()) list.sort((a, b) => a.code.localeCompare(b.code));
     return [...g.entries()].sort(
-      (a, b) => familyRank(a[0]) - familyRank(b[0]) || a[0].localeCompare(b[0])
+      (a, b) => groupRank(a[0]) - groupRank(b[0]) || a[0].localeCompare(b[0])
     );
   }, [methods]);
 
