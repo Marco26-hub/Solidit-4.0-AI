@@ -31,29 +31,49 @@ def analyze_multifiber(
     *,
     color_matrix: Any = None,
     thresholds: list[dict] | None = None,
+    grey_scale: bool = False,
 ) -> dict[str, Any]:
     """fibers: ordered fibre codes (from the strip profile).
-    reference_lab: {fiber: {"L":..,"a":..,"b":..}} — the unstained reference."""
+    reference_lab: {fiber: {"L":..,"a":..,"b":..}} — the unstained reference.
+    grey_scale: when True, look for an in-frame neutral reference and white-balance
+    the image with it (ISO 105-A11 in-frame colour correction)."""
     import numpy as np
     from PIL import Image
 
     thresholds = thresholds or DEFAULT_STAINING_THRESHOLDS
     image = Image.open(BytesIO(image_bytes)).convert("RGB")
     arr: Any = np.asarray(image)
+    pipeline_warnings: list[str] = []
+    grey_flags: dict[str, Any] = {"requested": grey_scale, "detected": False}
+
+    # precedence: explicit device matrix > in-frame grey-scale > none
     if color_matrix is not None:
         arr = apply_color_matrix(arr, color_matrix)
+        colour_correction = "device_matrix"
+    elif grey_scale:
+        from app.vision.grey_scale import find_neutral_reference, neutral_white_balance
+
+        ref = find_neutral_reference(arr)
+        if ref is not None:
+            arr = neutral_white_balance(arr, ref["rgb"])
+            colour_correction = "in_frame_grey_scale"
+            grey_flags.update(detected=True, reference=ref)
+        else:
+            colour_correction = "none"
+            pipeline_warnings.append(
+                "grey_scale: riferimento neutro richiesto ma NON rilevato nel fotogramma"
+            )
+    else:
+        colour_correction = "none"
 
     seg = detect_and_split(arr, fibers)
     rois = seg["rois"]
     quality = assess_capture(arr, fill_ratio=seg.get("fill_ratio"))
 
-    # surface (do NOT hide) that no device colour-correction was applied: ΔE is
-    # computed on raw camera RGB, which is a real metrological limitation
-    colour_correction = "applied" if color_matrix is not None else "none"
-    pipeline_warnings = list(quality["warnings"])
+    pipeline_warnings += list(quality["warnings"])
     if colour_correction == "none":
         pipeline_warnings.append(
-            "colour_correction: non applicata (RGB camera grezzo, nessuna taratura device)"
+            "colour_correction: non applicata (RGB camera grezzo, nessuna taratura/grey-scale)"
         )
 
     out_fibers: dict[str, Any] = {}
@@ -87,6 +107,7 @@ def analyze_multifiber(
             "bbox": seg["bbox"],
             "fill_ratio": seg["fill_ratio"],
             "colour_correction": colour_correction,
+            "grey_scale": grey_flags,
             "capture": quality,
         },
         "warnings": pipeline_warnings,

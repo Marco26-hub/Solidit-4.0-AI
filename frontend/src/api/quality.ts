@@ -72,6 +72,8 @@ export const createCaptureSession = (body: {
   grey_scale_ref_id?: string | null;
   white_tile_ref_id?: string | null;
   colour_target_ref_id?: string | null;
+  has_inframe_grey_scale?: boolean;
+  strict_quality?: boolean;
 }) =>
   apiFetch<CaptureSessionLite>("/api/v1/capture-sessions", {
     method: "POST",

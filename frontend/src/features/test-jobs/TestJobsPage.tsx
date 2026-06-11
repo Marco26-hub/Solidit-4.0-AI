@@ -288,9 +288,13 @@ function JobPanel({
   const [visFile, setVisFile] = useState<File | null>(null);
   const [lightboxRef, setLightboxRef] = useState("");
   const [greyRef, setGreyRef] = useState("");
+  const [inframeGrey, setInframeGrey] = useState(false);
+  const [strict, setStrict] = useState(false);
   const refIds = () => ({
     lightbox_ref_id: lightboxRef || null,
     grey_scale_ref_id: greyRef || null,
+    has_inframe_grey_scale: inframeGrey,
+    strict_quality: strict,
   });
   const usableRefs = (kind: string) =>
     (calrefs.data ?? []).filter((r) => r.kind === kind && r.validity !== "retired");
@@ -464,6 +468,20 @@ function JobPanel({
             </select>
           </Field>
         </div>
+        <div className="mt-2 flex flex-wrap gap-4">
+          <label className="flex items-center gap-2 text-sm text-steel">
+            <input
+              type="checkbox"
+              checked={inframeGrey}
+              onChange={(e) => setInframeGrey(e.target.checked)}
+            />
+            Foto con scala grigia in-frame (correzione colore ISO 105-A11)
+          </label>
+          <label className="flex items-center gap-2 text-sm text-steel">
+            <input type="checkbox" checked={strict} onChange={(e) => setStrict(e.target.checked)} />
+            Modalità accreditamento (rifiuta cattura di qualità insufficiente)
+          </label>
+        </div>
         <p className="mt-1 text-xs text-steel">
           Foto della sola striscia multifibra: le bande vengono riconosciute in ordine secondo la
           norma del lotto. I valori ΔE/grado della foto precompilano i campi di "Risultato manuale"
@@ -518,13 +536,17 @@ function JobPanel({
               orientation?: string;
               boundary_method?: string;
               fill_ratio?: number;
+              colour_correction?: string;
+              grey_scale?: { detected?: boolean };
             };
+            repeatability?: { replicates?: number; max_deviation_grade?: number };
           };
           references?: Record<string, { code: string; validity: string }>;
         };
         const visFibers = r?.vision?.fibers;
         const warnings = r?.vision?.warnings ?? [];
         const qf = r?.vision?.quality_flags;
+        const rep = r?.vision?.repeatability;
         const refs = r?.references ?? {};
         const isChange = r?.assessment_type === "change";
         return (
@@ -544,7 +566,12 @@ function JobPanel({
             {qf && (
               <div className="mt-1 text-[11px] text-slate-400">
                 striscia: {qf.orientation ?? "—"} · bande {qf.boundary_method ?? "—"} · fill{" "}
-                {qf.fill_ratio != null ? `${Math.round(qf.fill_ratio * 100)}%` : "—"}
+                {qf.fill_ratio != null ? `${Math.round(qf.fill_ratio * 100)}%` : "—"} · corr.
+                colore {qf.colour_correction ?? "—"}
+                {qf.grey_scale?.detected ? " (grey-scale ✓)" : ""}
+                {rep && rep.replicates != null
+                  ? ` · ${rep.replicates} repliche, scarto ${rep.max_deviation_grade}`
+                  : ""}
               </div>
             )}
             {Object.keys(refs).length > 0 && (

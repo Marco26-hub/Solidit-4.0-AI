@@ -18,6 +18,10 @@ class CaptureSessionCreate(BaseModel):
     grey_scale_ref_id: uuid.UUID | None = None
     white_tile_ref_id: uuid.UUID | None = None
     colour_target_ref_id: uuid.UUID | None = None
+    # the photo includes an in-frame neutral/grey reference (ISO 105-A11 correction)
+    has_inframe_grey_scale: bool = False
+    # accreditation mode: REJECT (block) the analysis when capture quality is poor
+    strict_quality: bool = False
 
 
 class CaptureSessionOut(BaseModel):

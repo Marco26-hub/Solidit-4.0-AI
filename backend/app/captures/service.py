@@ -24,8 +24,41 @@ from app.test_jobs.service import _load_rule_dicts, evaluate_pass_fail
 
 _MULTIFIBER_TYPES = ("multifiber_after", "multifiber")
 _COLOUR_CHANGE_TYPES = ("colour_change", "fabric_after")
+_MAX_REPLICATES = 5  # how many replicate photos we aggregate for repeatability
+_REPEATABILITY_TOL = 0.5  # grade deviation across replicates above this -> warning
 
 logger = structlog.get_logger(__name__)
+
+
+def _compute_repeatability(visions: list[dict], thresholds: list[dict], grade_fn) -> dict:
+    """Aggregate per-fibre ΔE/grade across replicate analyses. Returns mean ΔE
+    (grade re-derived from the mean) and the max grade deviation across shots —
+    the ISO repeatability indicator. With one shot, deviation is 0."""
+    fibers: set[str] = set()
+    for v in visions:
+        fibers.update(v.get("fibers", {}).keys())
+
+    per_fiber: dict[str, dict] = {}
+    max_dev = 0.0
+    for f in fibers:
+        des = [v["fibers"][f]["delta_e"] for v in visions if f in v.get("fibers", {})]
+        grades = [v["fibers"][f]["gray_scale_grade"] for v in visions if f in v.get("fibers", {})]
+        if not des:
+            continue
+        mean_de = round(sum(des) / len(des), 3)
+        dev = round(max(grades) - min(grades), 2) if grades else 0.0
+        max_dev = max(max_dev, dev)
+        per_fiber[f] = {
+            "mean_delta_e": mean_de,
+            "grade": grade_fn(mean_de, thresholds),
+            "replicate_grades": grades,
+            "max_dev_grade": dev,
+        }
+    return {
+        "replicates": len(visions),
+        "max_deviation_grade": round(max_dev, 2),
+        "per_fiber": per_fiber,
+    }
 
 
 async def _get_job(session: AsyncSession, company_id: uuid.UUID, job_id: uuid.UUID) -> TestJob:
@@ -59,6 +92,10 @@ async def create_session(
         grey_scale_ref_id=data.grey_scale_ref_id,
         white_tile_ref_id=data.white_tile_ref_id,
         colour_target_ref_id=data.colour_target_ref_id,
+        telemetry={
+            "inframe_grey_scale": data.has_inframe_grey_scale,
+            "strict_quality": data.strict_quality,
+        },
     )
     session.add(cs)
     await session.flush()
@@ -232,19 +269,24 @@ async def _analyze_staining(
     # ISO 17025: block if a linked reference is expired/retired (before any work)
     refs, ref_warnings = await _reference_provenance(session, company_id, cs)
 
-    img = (
-        await session.execute(
-            select(ImageAsset)
-            .where(
-                ImageAsset.company_id == company_id,
-                ImageAsset.capture_session_id == cs.id,
-                ImageAsset.asset_type.in_(_MULTIFIBER_TYPES),
+    # all replicate photos of the strip (newest first) — repeatability needs >1
+    imgs = list(
+        (
+            await session.execute(
+                select(ImageAsset)
+                .where(
+                    ImageAsset.company_id == company_id,
+                    ImageAsset.capture_session_id == cs.id,
+                    ImageAsset.asset_type.in_(_MULTIFIBER_TYPES),
+                )
+                .order_by(ImageAsset.created_at.desc())
+                .limit(_MAX_REPLICATES)
             )
-            .order_by(ImageAsset.created_at.desc())
-            .limit(1)
         )
-    ).scalar_one_or_none()
-    if img is None:
+        .scalars()
+        .all()
+    )
+    if not imgs:
         raise AppError("Nessuna foto multifibra caricata in questa sessione.", code="no_image")
 
     batch = (
@@ -266,12 +308,39 @@ async def _analyze_staining(
         session, company_id, cs.test_method_code or "", "staining"
     )
 
-    data = get_storage().get(img.storage_key)
+    from app.vision.grading import map_delta_e_to_grade
     from app.vision.pipeline import analyze_multifiber
 
-    vision = analyze_multifiber(data, fibers, reference, thresholds=thresholds)
+    grey = bool((cs.telemetry or {}).get("inframe_grey_scale"))
+    # newest image is the primary result; the rest provide repeatability
+    replicate_visions = [
+        analyze_multifiber(
+            get_storage().get(im.storage_key),
+            fibers,
+            reference,
+            thresholds=thresholds,
+            grey_scale=grey,
+        )
+        for im in imgs
+    ]
+    vision = replicate_visions[0]
+    repeatability = _compute_repeatability(replicate_visions, thresholds, map_delta_e_to_grade)
+    vision["repeatability"] = repeatability
+    # report repeatability-aggregated (mean) values when there is more than one shot
+    if repeatability["replicates"] > 1:
+        for f, agg in repeatability["per_fiber"].items():
+            if f in vision["fibers"]:
+                vision["fibers"][f]["delta_e"] = agg["mean_delta_e"]
+                vision["fibers"][f]["gray_scale_grade"] = agg["grade"]
+
     # surface non-validated/fallback decisions instead of hiding them
     extra_warnings = list(ref_warnings)
+    _rep_over = repeatability["max_deviation_grade"] > _REPEATABILITY_TOL
+    if repeatability["replicates"] > 1 and _rep_over:
+        extra_warnings.append(
+            f"ripetibilità: scarto {repeatability['max_deviation_grade']} gradi tra repliche "
+            f"(oltre tolleranza {_REPEATABILITY_TOL})"
+        )
     vision["quality_flags"]["grading_profile"] = grading_profile
     vision["quality_flags"]["fiber_order"] = fiber_source
     if grading_profile == "EXAMPLE_DEFAULT" or "esempio" in grading_profile:
@@ -283,6 +352,19 @@ async def _analyze_staining(
             "fibre: ordine non garantito dal profilo striscia (associa uno standard al lotto)"
         )
     vision["warnings"] = list(vision.get("warnings", [])) + extra_warnings
+
+    # accreditation strict mode: refuse to emit a result on a poor capture
+    if (cs.telemetry or {}).get("strict_quality"):
+        cap = vision["quality_flags"]["capture"]
+        reasons = list(cap["warnings"])
+        if grey and not vision["quality_flags"]["grey_scale"]["detected"]:
+            reasons.append("grey-scale non rilevata")
+        if reasons:
+            raise AppError(
+                "Cattura rifiutata (qualità insufficiente): " + "; ".join(reasons),
+                code="capture_rejected",
+            )
+
     fibers_meas = {
         f: {"delta_e": v["delta_e"], "gray_scale_grade": v["gray_scale_grade"]}
         for f, v in vision["fibers"].items()
