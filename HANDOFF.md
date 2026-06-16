@@ -116,10 +116,12 @@ con ruolo non-superuser).
 2. **Billing**: codice pronto — resta configurare account Stripe + price IDs
    (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_TRACE/VISION`) +
    email transazionali + observability/backup.
-3. **App iOS nativa** — completare oltre login/camera: frame-processor blur/
-   esposizione (worklet), marker ArUco, coda offline, schermata selezione job
-   che passa il `config` a `CameraCaptureScreen`. Poi Apple Developer + IAP +
-   TestFlight (vedi "Mobile").
+3. **App iOS nativa** — fatto: login+sessione, **selezione prova→config reale**,
+   cattura nativa (lock esposizione/fuoco), **coda offline** (expo-file-system),
+   privacy manifest + `STORE_LISTING.md`. Resta: frame-processor blur/esposizione
+   (worklet; oggi tilt reale, blur/exposure stub), marker ArUco, **icona+screenshot**,
+   Apple Developer + build (npm i → expo prebuild → Xcode/device) → TestFlight →
+   submit. Niente IAP (abbonamenti sul web).
 4. Hardening vision: marker ArUco + **omografia** (OpenCV), worker async per
    vision/PDF/email.
 
