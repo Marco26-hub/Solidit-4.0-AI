@@ -76,6 +76,10 @@ Monorepo attivo: `backend/` (FastAPI, Python 3.12) · `frontend/` (React+Vite+TS
   133/188/EP1/EP2, con equivalente ISO) + ASTM (D2244/E313) + **cuoio**
   (ISO 11640/11641/11642/15700/17700 + IULTCS IUF 421/426/434). Menu raggruppato
   per ente: UNI EN ISO 105 / AATCC / ASTM / Cuoio (ISO/IULTCS) / Interni.
+- **Billing Stripe**: checkout (`POST /billing/checkout`) + webhook firmato
+  (`/billing/webhook` → upsert subscription + `account_tier` per gating) +
+  pagina Abbonamento (piani Trace/Vision Pro). Inattivo finché STRIPE_* non
+  configurate (errore pulito). `[billing]` extra (stripe, lazy).
 - **GDPR**: export/delete endpoint + template legali in `docs/legal/`.
 - **Deploy**: `infra/Dockerfile.prod` (vision+storage), `render.yaml`,
   `infra/neon/setup_neon.sh`, storage **S3/R2** (`storage.py`, attivo con env).
@@ -96,7 +100,7 @@ cd backend && pip install -e ".[vision]"
 python -m alembic upgrade head
 uvicorn app.main:app --port 8000
 cd ../frontend && npm i && npm run dev   # VITE_API_BASE=http://localhost:8000
-pytest backend  # 65 verdi (serve Postgres)
+pytest backend  # 69 verdi (serve Postgres)
 ```
 
 Deploy: vedi **DEPLOY.md** (frontend su Vercel root=`frontend`; backend su
@@ -109,8 +113,9 @@ con ruolo non-superuser).
    `infra/neon/setup_neon.sh` (crea ruolo `solidita_app` + migra + verifica RLS);
    bucket **S3/R2** per le foto; backend su **Render** (`render.yaml`); frontend
    su **Vercel** (root=`frontend`). Vedi `DEPLOY.md`.
-2. **Billing Stripe** attivo (checkout + webhook + gating; tabella `subscriptions`
-   esiste, flusso pagamento no) + email transazionali + observability/backup.
+2. **Billing**: codice pronto — resta configurare account Stripe + price IDs
+   (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_TRACE/VISION`) +
+   email transazionali + observability/backup.
 3. **App iOS nativa** — completare oltre login/camera: frame-processor blur/
    esposizione (worklet), marker ArUco, coda offline, schermata selezione job
    che passa il `config` a `CameraCaptureScreen`. Poi Apple Developer + IAP +
