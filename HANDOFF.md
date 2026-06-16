@@ -107,6 +107,28 @@ Deploy: vedi **DEPLOY.md** (frontend su Vercel root=`frontend`; backend su
 Railway/Render/Fly/VPS — NON su Vercel; DB consigliato: Neon/managed Postgres
 con ruolo non-superuser).
 
+## Segreti & rotazione (IMPORTANTE)
+
+> Nessun segreto va committato. Tutti via env (Render/Vercel dashboard). Le
+> credenziali condivise in chat durante il setup vanno **ruotate dopo l'uso**.
+
+**Da ruotare DOPO il setup live:**
+- **Neon — password del DB**: dopo aver lanciato `setup_neon.sh`, in Neon console
+  → **Roles → `neondb_owner` (e `solidita_app`) → Reset password**. Aggiornare
+  `DATABASE_URL` (solidita_app) su Render e `MIGRATION_DATABASE_URL` (owner) dove
+  servono le migrazioni. La connection string owner condivisa in chat va
+  considerata compromessa → reset obbligatorio.
+- **Neon — API key** (se usata per neonctl): Account → API keys → **Revoke** dopo
+  il provisioning.
+- **S3/R2 — access/secret key**: ruotare se condivise; usare una key dedicata al
+  bucket con permessi minimi.
+- **Stripe**: usare prima le **chiavi test**; passare alle live solo in prod;
+  `STRIPE_WEBHOOK_SECRET` per endpoint.
+- **JWT_SECRET_KEY**: generato da Render (`generateValue`); mai riusare il dev.
+
+**Checklist rotazione post-deploy:** [ ] reset password Neon owner+app · [ ] revoke
+Neon API key · [ ] aggiornate env su Render · [ ] verificato login+analyze live.
+
 ## Cosa resta (in ordine)
 
 1. **Deploy live** (codice 100% pronto): creare progetto **Neon** → lanciare
