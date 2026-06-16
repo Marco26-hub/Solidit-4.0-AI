@@ -32,6 +32,13 @@ export function Layout() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <NavLink
+            to="/billing"
+            title="Abbonamento"
+            className="hidden rounded-lg px-2 py-1 text-xs font-medium text-steel hover:bg-slate-100 sm:block"
+          >
+            Piano
+          </NavLink>
           <div className="text-right leading-tight">
             <div className="max-w-[40vw] truncate text-sm font-medium">
               {profile?.companyName ?? "—"}

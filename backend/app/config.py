@@ -54,9 +54,12 @@ class Settings(BaseSettings):
     # Local filesystem object-storage dir (dev fallback when S3 is not configured)
     storage_local_dir: str = "storage"
 
-    # Billing (Stripe). Optional — webhook is a no-op until the secret is set.
+    # Billing (Stripe). Optional — checkout/webhook inactive until configured.
     stripe_secret_key: str | None = None
     stripe_webhook_secret: str | None = None
+    # Stripe Price IDs per plan (from the Stripe dashboard)
+    stripe_price_trace: str | None = None
+    stripe_price_vision: str | None = None
 
     @property
     def cors_origins_list(self) -> list[str]:

@@ -149,6 +149,20 @@ export interface Readiness {
 export const getAccreditationReadiness = () =>
   apiFetch<Readiness>("/api/v1/accreditation/readiness");
 
+// ── Billing (Stripe) ─────────────────────────────────────────────────────────
+export interface Subscription {
+  id: string;
+  plan: string;
+  status: string;
+  current_period_end: string | null;
+}
+export const listSubscriptions = () => apiFetch<Subscription[]>("/api/v1/subscriptions");
+export const createCheckout = (plan: "trace" | "vision") =>
+  apiFetch<{ url: string }>("/api/v1/billing/checkout", {
+    method: "POST",
+    body: JSON.stringify({ plan }),
+  });
+
 export interface ProficiencyTest {
   id: string;
   scheme: string;

@@ -7,6 +7,7 @@ import "./index.css";
 import { Layout } from "@/components/Layout";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ArticlesPage } from "@/features/articles/ArticlesPage";
+import { BillingPage } from "@/features/billing/BillingPage";
 import { BatchZeroPage } from "@/features/batch-zero/BatchZeroPage";
 import { BrandSpecsPage } from "@/features/brand-specs/BrandSpecsPage";
 import { LedgerPage } from "@/features/certificate-ledger/LedgerPage";
@@ -37,6 +38,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                 <Route path="/test-jobs" element={<TestJobsPage />} />
                 <Route path="/methods" element={<MethodsPage />} />
                 <Route path="/validation" element={<ValidationPage />} />
+                <Route path="/billing" element={<BillingPage />} />
                 <Route path="/ledger" element={<LedgerPage />} />
                 <Route path="/devices" element={<DevicesPage />} />
               </Route>
