@@ -17,6 +17,7 @@ import {
   type MeasurementResult,
 } from "@/api/capture";
 import { evaluateCaptureGates, type Telemetry } from "@/state/captureStore";
+import { enqueue } from "@/state/queue";
 
 /**
  * Metrology-grade capture for iPhone 16 Pro. Unlike the web app, the native
@@ -39,6 +40,7 @@ export function CameraCaptureScreen({ config }: { config: CaptureSessionInput })
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<MeasurementResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [queued, setQueued] = useState(false);
 
   useEffect(() => {
     if (!hasPermission) requestPermission();
@@ -69,6 +71,8 @@ export function CameraCaptureScreen({ config }: { config: CaptureSessionInput })
     if (!camera.current || busy) return;
     setError(null);
     setBusy(true);
+    const assetType = config.capture_type === "colour_change" ? "fabric_after" : "multifiber_after";
+    let photoPath: string | null = null;
     try {
       const photo = await camera.current.takePhoto({
         flash: "off",
@@ -76,17 +80,23 @@ export function CameraCaptureScreen({ config }: { config: CaptureSessionInput })
         // quality over speed: full resolution, no extra processing
         qualityPrioritization: "quality",
       });
+      photoPath = photo.path;
       const token = getAccessToken();
       const session = await createCaptureSession(config);
-      await uploadCaptureImage(
-        session.id,
-        photo.path,
-        config.capture_type === "colour_change" ? "fabric_after" : "multifiber_after",
-        token
-      );
+      await uploadCaptureImage(session.id, photo.path, assetType, token);
       setResult(await analyzeCaptureSession(session.id));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      // offline / server unreachable -> queue the capture for later upload
+      if (photoPath) {
+        try {
+          await enqueue(config, photoPath, assetType, String(Date.now()));
+          setQueued(true);
+        } catch (qe) {
+          setError(qe instanceof Error ? qe.message : String(qe));
+        }
+      } else {
+        setError(e instanceof Error ? e.message : String(e));
+      }
     } finally {
       setBusy(false);
     }
@@ -114,7 +124,7 @@ export function CameraCaptureScreen({ config }: { config: CaptureSessionInput })
         style={StyleSheet.absoluteFill}
         device={device}
         format={format}
-        isActive={!result}
+        isActive={!result && !queued}
         photo
         // lock the exposure bias to a fixed value -> repeatable acquisition
         exposure={0}
@@ -131,7 +141,20 @@ export function CameraCaptureScreen({ config }: { config: CaptureSessionInput })
       </View>
 
       <View style={styles.bottom}>
-        {result ? (
+        {queued ? (
+          <View style={styles.resultBox}>
+            <Text style={styles.resultText}>Salvato in coda offline</Text>
+            <Text style={styles.queuedHint}>Verrà caricato e analizzato appena torni online.</Text>
+            <Pressable
+              style={styles.again}
+              onPress={() => {
+                setQueued(false);
+              }}
+            >
+              <Text style={styles.againText}>Nuova acquisizione</Text>
+            </Pressable>
+          </View>
+        ) : result ? (
           <View style={styles.resultBox}>
             <Text style={styles.resultText}>
               {result.pass_fail.overall_pass
@@ -193,6 +216,7 @@ const styles = StyleSheet.create({
   shutterInner: { width: 56, height: 56, borderRadius: 28, backgroundColor: "#fff" },
   resultBox: { alignItems: "center" },
   resultText: { color: "#fff", fontSize: 18, fontWeight: "700" },
+  queuedHint: { color: "#cbd5e1", fontSize: 12, marginTop: 4, textAlign: "center" },
   again: {
     marginTop: 14,
     backgroundColor: "#2563eb",

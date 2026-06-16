@@ -42,17 +42,24 @@ npm run typecheck       # after npm install (vision-camera types come from node_
 ## Done
 
 - **Login + session**: `src/api/auth.ts` (login → token in `expo-secure-store`,
-  `restoreSession` on launch, logout) + real `LoginScreen`. `App.tsx` is an
-  auth-aware flow: Login → Home → Camera capture.
+  `restoreSession` on launch, logout) + real `LoginScreen`.
+- **Job-selection flow**: `src/screens/JobSelectScreen.tsx` fetches jobs / batches /
+  methods / grey-scale references and builds the real `CaptureSessionInput` config
+  (job, batch, method, reference, in-frame grey-scale + strict toggles), passed to
+  `CameraCaptureScreen`. Flow: Login → Home → Selezione prova → Acquisizione → Esito.
+- **Offline queue**: `src/state/queue.ts` — failed uploads persist to the document
+  dir (`expo-file-system`) with their config; `flush()` retries on app launch.
+  Capture screen shows "Salvato in coda offline" when offline.
+- **App Store readiness**: `app.json` privacy manifest + camera usage + bundle id;
+  `STORE_LISTING.md` (metadata, privacy nutrition, no-IAP rationale, review notes,
+  submission checklist).
 
 ## TODO before field use
 
-- Frame processor (worklet) for real blur/exposure scoring → feed the gates.
+- Frame processor (worklet) for real blur/exposure scoring → feed the gates
+  (today tilt is real; blur/exposure are stubbed high).
 - ArUco/marker detection for geometry coherence (pairs with backend homography).
-- Offline encrypted capture queue.
-- Wire the capture config (test job, batch, method, references, grey-scale/strict
-  toggles) from a job-selection screen into `CameraCaptureScreen`'s `config` prop
-  (today `App.tsx` opens it with a placeholder config).
+- App icon 1024 + screenshots; Apple Developer account → TestFlight → submit.
 
 Hardware: iPhone 16 Pro+ recommended; 15 Pro/Pro Max with calibration. Non-Pro
 devices: consultation/barcode only, NOT Vision acquisition. Physical dima +
