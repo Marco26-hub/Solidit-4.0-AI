@@ -52,13 +52,18 @@ uvicorn app.main:app --port 8000`; `cd frontend && npm i && npm run dev`;
 backend.** Verifica le modifiche frontend via i tool preview.
 
 **Prossimo lavoro (in ordine, vedi HANDOFF "Cosa resta"):**
-1. **Deploy live** — se l'utente fornisce la connection string owner di Neon,
-   lancia `infra/neon/setup_neon.sh`, poi guidalo su Render (backend) + Vercel
-   (frontend) + bucket R2/S3.
-2. **Billing Stripe** (checkout + webhook + gating; `subscriptions` esiste).
-3. Completare **app iOS nativa** (frame-processor blur/esposizione, marker,
-   selezione job→config, coda offline) → poi Apple Developer + IAP + TestFlight.
-4. Hardening vision: ArUco + omografia (OpenCV), worker async.
+1. **Deploy live** — **Neon già pronto** (schema migrato a 0015, ruolo
+   `solidita_app`, RLS ok). `DATABASE_URL` backend = endpoint **diretto** (non
+   `-pooler`) + `?sslmode=require` SENZA `channel_binding`. Resta: bucket R2/S3
+   (env `S3_*`), backend su **Render** (`render.yaml`), frontend su **Vercel**
+   (root=`frontend`, `VITE_API_BASE`). ⚠️ la password DB è stata condivisa in chat
+   → **resettarla in Neon** prima della prod (Roles → Reset).
+2. Completare **app iOS nativa** (frame-processor blur/esposizione reale, marker
+   ArUco) → Apple Developer + icona/screenshot + TestFlight + submit (no IAP).
+3. Hardening vision: ArUco + omografia (OpenCV), worker async per vision/PDF/email.
+
+Billing Stripe: codice pronto (checkout/webhook/gating + pagina) — resta solo
+configurare account Stripe + price IDs in env.
 
 **Bloccanti non-codice (utente/business):** campioni reali + spettrofotometro per
 la validazione, kit hardware certificato, consulente ISO 17025, profili grading

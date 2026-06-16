@@ -131,10 +131,21 @@ Neon API key · [ ] aggiornate env su Render · [ ] verificato login+analyze liv
 
 ## Cosa resta (in ordine)
 
-1. **Deploy live** (codice 100% pronto): creare progetto **Neon** → lanciare
-   `infra/neon/setup_neon.sh` (crea ruolo `solidita_app` + migra + verifica RLS);
-   bucket **S3/R2** per le foto; backend su **Render** (`render.yaml`); frontend
-   su **Vercel** (root=`frontend`). Vedi `DEPLOY.md`.
+1. **Deploy live**:
+   - **Neon — FATTO**: progetto creato, ruolo non-superuser `solidita_app`, schema
+     **migrato a 0015** (35 tabelle, 28 con FORCE RLS, 42 metodi seedati, RLS
+     verificato). Host: `ep-empty-bonus-at8e09an…us-east-1.aws.neon.tech`, db `neondb`.
+     **`DATABASE_URL` per il backend (asyncpg)**: usare l'**endpoint diretto**
+     (NON `-pooler`, per le prepared statement) e **`?sslmode=require`** SENZA
+     `channel_binding` (asyncpg lo rifiuta; `app/db/session.py` converte sslmode→ssl):
+     `postgresql+asyncpg://solidita_app:<PWD>@ep-empty-bonus-at8e09an.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require`
+     ⚠️ la `<PWD>` è stata condivisa in chat → **RESET in Neon prima della prod**.
+   - **R2/S3**: creare bucket → env `S3_*` (vedi DEPLOY.md). Senza, le foto non
+     persistono (LocalStorage).
+   - **Render**: backend via `render.yaml` (env: DATABASE_URL sopra, JWT_SECRET_KEY,
+     CORS_ORIGINS, PUBLIC_BASE_URL, WEB_BASE_URL, APP_ENV=production, S3_*).
+     Le migrazioni sono già applicate; il preDeploy `alembic upgrade head` è no-op.
+   - **Vercel**: frontend root=`frontend`, env `VITE_API_BASE`=URL backend Render.
 2. **Billing**: codice pronto — resta configurare account Stripe + price IDs
    (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_TRACE/VISION`) +
    email transazionali + observability/backup.
