@@ -51,7 +51,7 @@ export function PhotoInput({
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(() => {});
+          videoRef.current.play().catch((e) => console.warn("PhotoInput: video play failed", e));
         }
       }, 0);
     } catch (e) {

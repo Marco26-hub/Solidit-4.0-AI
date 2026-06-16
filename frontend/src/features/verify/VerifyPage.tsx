@@ -23,7 +23,10 @@ export function VerifyPage() {
         setResult(r);
         setState("done");
       })
-      .catch(() => setState("error"));
+      .catch((e) => {
+        console.error("VerifyPage: report verification failed", e);
+        setState("error");
+      });
   }, []);
 
   const valid = result?.valid === true;

@@ -62,7 +62,8 @@ async function doRefresh(): Promise<boolean> {
   if (profileRaw) {
     try {
       companyId = (JSON.parse(profileRaw)?.companyId as string | null) ?? null;
-    } catch {
+    } catch (e) {
+      console.warn("doRefresh: corrupted profile in localStorage", e);
       companyId = null;
     }
   }
@@ -77,7 +78,8 @@ async function doRefresh(): Promise<boolean> {
     const data = (await res.json()) as { access_token: string; refresh_token: string };
     setTokens(data.access_token, data.refresh_token);
     return true;
-  } catch {
+  } catch (e) {
+    console.error("doRefresh: token refresh request failed", e);
     return false;
   }
 }
@@ -114,9 +116,10 @@ export async function apiFetch<T>(
   }
 
   if (!res.ok) {
-    const body = (await res.json().catch(() => ({
-      error: { code: "error", message: res.statusText },
-    }))) as ApiErrorBody;
+    const body = (await res.json().catch((e) => {
+      console.warn("apiFetch: error body is not JSON", e, "status", res.status);
+      return { error: { code: "error", message: res.statusText } };
+    })) as ApiErrorBody;
     throw new ApiError(res.status, body);
   }
   if (res.status === 204) return undefined as T;

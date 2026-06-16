@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 import jwt
+import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,6 +28,8 @@ from app.common.security import (
 from app.config import settings
 from app.db.models import Company, CompanyMembership, User
 from app.db.session import SessionLocal
+
+logger = structlog.get_logger(__name__)
 
 DEFAULT_OWNER_ROLE = "company_admin"
 
@@ -228,7 +231,8 @@ async def logout(*, refresh_token: str) -> None:
     try:
         payload = decode_token(refresh_token, expected_type="refresh")
         family_id = uuid.UUID(payload["family_id"])
-    except (jwt.PyJWTError, KeyError, ValueError):
+    except (jwt.PyJWTError, KeyError, ValueError) as exc:
+        logger.warning("logout: ignoring malformed refresh token", error=str(exc))
         return
     async with SessionLocal() as session:
         async with session.begin():

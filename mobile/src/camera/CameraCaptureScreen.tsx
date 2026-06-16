@@ -77,8 +77,6 @@ export function CameraCaptureScreen({ config }: { config: CaptureSessionInput })
       const photo = await camera.current.takePhoto({
         flash: "off",
         enableShutterSound: false,
-        // quality over speed: full resolution, no extra processing
-        qualityPrioritization: "quality",
       });
       photoPath = photo.path;
       const token = getAccessToken();

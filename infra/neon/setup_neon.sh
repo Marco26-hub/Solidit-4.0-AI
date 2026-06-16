@@ -56,7 +56,13 @@ SQL
 
 echo "→ running Alembic migrations as owner"
 OWNER_SQLA_URL="$(printf '%s' "$NEON_OWNER_URL" | sed -E 's#^postgres(ql)?://#postgresql+asyncpg://#')"
-( cd "$(dirname "$0")/../../backend" && DATABASE_URL="$OWNER_SQLA_URL" python3 -m alembic upgrade head )
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+(
+  cd "$(dirname "$0")/../../backend"
+  DATABASE_URL="$OWNER_SQLA_URL" \
+    MIGRATION_DATABASE_URL="$OWNER_SQLA_URL" \
+    "$PYTHON_BIN" -m alembic upgrade head
+)
 
 echo "→ verifying RLS enforcement for solidita_app"
 psql "$NEON_OWNER_URL" -At -c "
@@ -73,5 +79,5 @@ Backend env (the APP role — never the owner):
   DATABASE_URL=postgresql+asyncpg://solidita_app:${APP_PASSWORD}@${HOSTPART}
 
 Keep the owner URL only for migrations:
-  MIGRATIONS_URL=${OWNER_SQLA_URL}
+  MIGRATION_DATABASE_URL=${OWNER_SQLA_URL}
 EOF

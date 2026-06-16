@@ -63,11 +63,13 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 | var | example | note |
 |---|---|---|
 | `DATABASE_URL` | `postgresql+asyncpg://solidita_app:pwd@host:5432/solidita` | non-superuser role |
-| `JWT_SECRET` | (random 32+ bytes) | never commit |
+| `JWT_SECRET_KEY` | (random 32+ bytes) | never commit |
 | `CORS_ORIGINS` | `https://<frontend>.vercel.app` | comma-separated |
 | `PUBLIC_BASE_URL` | `https://api.example.com` | report verify links |
-| `ENVIRONMENT` | `production` | enables HSTS header |
-| storage (prod) | S3 endpoint/bucket/keys | replace `LocalStorage` (Phase 9) |
+| `WEB_BASE_URL` | `https://<frontend>.vercel.app` | public report QR links |
+| `APP_ENV` | `production` | enables HSTS header |
+| storage (prod) | `S3_BUCKET`, `S3_ENDPOINT_URL`, `S3_REGION`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` | replace `LocalStorage` |
+| Stripe (optional) | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_TRACE`, `STRIPE_PRICE_VISION` | enables checkout |
 
 ### Docker (VPS)
 

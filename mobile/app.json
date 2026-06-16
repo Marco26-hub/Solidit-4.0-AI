@@ -2,15 +2,18 @@
   "expo": {
     "name": "Solidità 4.0",
     "slug": "solidita-4-0",
+    "owner": "silkincom",
     "version": "0.1.0",
     "orientation": "portrait",
-    "platforms": ["ios"],
+    "platforms": [
+      "ios"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.solidita.app",
       "buildNumber": "1",
       "infoPlist": {
-        "NSCameraUsageDescription": "La fotocamera serve per acquisire la striscia multifibra in modalità controllata (esposizione/fuoco bloccati) per la valutazione della solidità colore.",
+        "NSCameraUsageDescription": "Solidità 4.0 usa la fotocamera per l'acquisizione controllata della striscia multifibra.",
         "ITSAppUsesNonExemptEncryption": false
       },
       "privacyManifests": {
@@ -20,23 +23,31 @@
             "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypePhotos",
             "NSPrivacyCollectedDataTypeLinked": true,
             "NSPrivacyCollectedDataTypeTracking": false,
-            "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality"]
+            "NSPrivacyCollectedDataTypePurposes": [
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+            ]
           },
           {
             "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeUserID",
             "NSPrivacyCollectedDataTypeLinked": true,
             "NSPrivacyCollectedDataTypeTracking": false,
-            "NSPrivacyCollectedDataTypePurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality"]
+            "NSPrivacyCollectedDataTypePurposes": [
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+            ]
           }
         ],
         "NSPrivacyAccessedAPITypes": [
           {
             "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryFileTimestamp",
-            "NSPrivacyAccessedAPITypeReasons": ["C617.1"]
+            "NSPrivacyAccessedAPITypeReasons": [
+              "C617.1"
+            ]
           },
           {
             "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryDiskSpace",
-            "NSPrivacyAccessedAPITypeReasons": ["E174.1"]
+            "NSPrivacyAccessedAPITypeReasons": [
+              "E174.1"
+            ]
           }
         ]
       }
@@ -50,6 +61,11 @@
           "cameraPermissionText": "Solidità 4.0 usa la fotocamera per l'acquisizione controllata della striscia multifibra."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "add7965f-6c85-41eb-8582-b920792aa443"
+      }
+    }
   }
 }

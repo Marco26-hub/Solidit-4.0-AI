@@ -19,7 +19,7 @@ export default function App() {
   useEffect(() => {
     restoreSession().then((ok) => {
       setAuthed(ok);
-      if (ok) flush().catch(() => {}); // retry any offline-queued captures
+      if (ok) flush().catch((e) => console.warn("flush offline retry failed", e));
     });
   }, []);
 

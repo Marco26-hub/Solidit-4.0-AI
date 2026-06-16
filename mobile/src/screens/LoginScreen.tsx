@@ -20,6 +20,7 @@ export function LoginScreen({ onLoggedIn }: { onLoggedIn: () => void }) {
       }
       onLoggedIn();
     } catch (e) {
+      console.error("LoginScreen: login failed", e);
       setError(e instanceof Error ? e.message : "Login fallito");
     } finally {
       setBusy(false);

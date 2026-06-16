@@ -14,7 +14,11 @@ import os
 from pathlib import Path
 from typing import Protocol
 
+import structlog
+
 from app.config import settings
+
+logger = structlog.get_logger(__name__)
 
 
 class StorageBackend(Protocol):
@@ -91,7 +95,10 @@ class S3Storage:
         try:
             self._client.head_object(Bucket=self._bucket, Key=key)
             return True
-        except ClientError:
+        except ClientError as exc:
+            error_code = exc.response.get("Error", {}).get("Code", "Unknown")
+            if error_code != "NoSuchKey":
+                logger.warning("S3 exists check failed", key=key, error_code=error_code)
             return False
 
 
@@ -110,5 +117,9 @@ def get_storage() -> StorageBackend:
                 secret_key=settings.s3_secret_key,
             )
         else:
+            logger.warning(
+                "S3 not configured, using local storage fallback - uploads will not persist "
+                "across redeploys"
+            )
             _storage = LocalStorage(settings.storage_local_dir)
     return _storage

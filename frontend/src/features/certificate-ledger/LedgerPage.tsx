@@ -21,6 +21,8 @@ export function LedgerPage() {
     try {
       const v = await verifyReport(id);
       setVerified((m) => ({ ...m, [id]: v }));
+    } catch (e) {
+      console.error("verifyReport failed", e);
     } finally {
       setBusy(null);
     }

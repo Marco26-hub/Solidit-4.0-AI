@@ -24,6 +24,7 @@ export function LoginPage() {
       else if (res.companies.length > 0) setCompanies(res.companies);
       else setError(new Error("Nessuna azienda associata a questo account."));
     } catch (err) {
+      console.error("login failed", err);
       setError(err);
     } finally {
       setBusy(false);
@@ -36,6 +37,7 @@ export function LoginPage() {
       await selectCompany(id);
       navigate("/");
     } catch (err) {
+      console.error("selectCompany failed", err);
       setError(err);
     } finally {
       setBusy(false);

@@ -33,4 +33,5 @@ npm-debug.log*
 
 # Data / storage
 storage/
+backend/.pgdata/
 *.sqlite3

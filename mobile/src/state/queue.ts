@@ -32,7 +32,8 @@ async function readManifest(): Promise<QueueItem[]> {
   try {
     const txt = await FileSystem.readAsStringAsync(MANIFEST);
     return JSON.parse(txt) as QueueItem[];
-  } catch {
+  } catch (e) {
+    console.warn("readManifest failed, corrupted manifest?", e);
     return [];
   }
 }
@@ -76,8 +77,9 @@ export async function flush(): Promise<number> {
       await analyzeCaptureSession(session.id);
       await FileSystem.deleteAsync(it.file, { idempotent: true });
       done += 1;
-    } catch {
-      remaining.push(it); // keep for the next attempt
+    } catch (e) {
+      console.warn(`flush item ${it.id} failed, will retry`, e);
+      remaining.push(it);
     }
   }
   await writeManifest(remaining);
