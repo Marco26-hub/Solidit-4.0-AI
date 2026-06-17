@@ -50,6 +50,19 @@ async def create_reference(
     ).scalar_one_or_none()
     if existing is not None:
         raise ConflictError(f"Reference {data.kind}/{data.code} already exists")
+    # descriptive attributes ride the meta JSONB (no schema migration); drop None
+    meta = {
+        "subtype": data.subtype,
+        "series": data.series,
+        "standard": data.standard,
+        "illuminants": data.illuminants,
+        "lamp_hours": data.lamp_hours,
+        "cert_illuminant": data.cert_illuminant,
+        "cert_observer": data.cert_observer,
+        "consumable_type": data.consumable_type,
+        "patches": [p.model_dump() for p in data.patch_values] if data.patch_values else None,
+    }
+    meta = {k: v for k, v in meta.items() if v is not None}
     ref = CalibrationReference(
         company_id=company_id,
         kind=data.kind,
@@ -59,6 +72,7 @@ async def create_reference(
         valid_from=data.valid_from,
         valid_until=data.valid_until,
         reference_values=data.reference_values.model_dump() if data.reference_values else None,
+        meta=meta,
     )
     session.add(ref)
     await session.flush()

@@ -10,8 +10,16 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
-# physical reference kinds tracked for validity/expiry
-REFERENCE_KINDS = ("grey_scale", "white_tile", "colour_target", "lightbox", "other")
+# physical reference kinds tracked for validity/expiry (enforcement lives in the
+# Pydantic schema regex; keep this in sync for readers)
+REFERENCE_KINDS = (
+    "grey_scale",
+    "white_tile",
+    "colour_target",
+    "blue_wool",
+    "lightbox",
+    "other",
+)
 
 
 class CalibrationReference(UUIDPrimaryKeyMixin, TimestampMixin, Base):

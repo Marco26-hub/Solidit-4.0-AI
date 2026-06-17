@@ -161,9 +161,16 @@ export interface TestJob {
   created_at: string;
 }
 
+export interface PatchLab {
+  patch_id: string;
+  L: number;
+  a: number;
+  b: number;
+}
+
 export interface CalibrationReference {
   id: string;
-  kind: string; // grey_scale | white_tile | colour_target | lightbox | other
+  kind: string; // grey_scale | white_tile | colour_target | blue_wool | lightbox | other
   code: string;
   description: string | null;
   certificate_number: string | null;
@@ -172,6 +179,16 @@ export interface CalibrationReference {
   status: string;
   validity: string; // valid | expiring | expired | retired
   created_at: string;
+  // descriptive attributes (from meta, all nullable)
+  subtype?: string | null; // grey scale: A02 (change) | A03 (staining)
+  series?: string | null; // blue wool: iso_1_8 | aatcc_l2_l9
+  standard?: string | null; // public label e.g. "ISO 105-B02"
+  illuminants?: string[] | null;
+  lamp_hours?: number | null;
+  cert_illuminant?: string | null;
+  cert_observer?: string | null;
+  consumable_type?: string | null;
+  patch_values?: PatchLab[] | null;
 }
 
 export interface ValidationRun {

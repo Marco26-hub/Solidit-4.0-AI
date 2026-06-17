@@ -139,3 +139,75 @@ async def test_analyze_without_references_warns_not_blocks(client, require_db):
     assert r.status_code == 201, r.text
     warnings = r.json()["results"]["vision"]["warnings"]
     assert any("riferimento" in w or "accreditabile" in w for w in warnings)
+
+
+async def test_blue_wool_reference_and_meta_roundtrip(client, require_db):
+    reg = await _register(client, f"bw-{uuid.uuid4().hex[:8]}@example.com", "BlueWool Co")
+    h = {"Authorization": f"Bearer {reg['access_token']}"}
+
+    r = await client.post(
+        "/api/v1/calibration-references",
+        json={
+            "kind": "blue_wool",
+            "code": "BW-1",
+            "series": "iso_1_8",
+            "standard": "ISO 105-B02",
+        },
+        headers=h,
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["validity"] == "valid"
+    assert body["series"] == "iso_1_8"
+    assert body["standard"] == "ISO 105-B02"
+
+    lst = (await client.get("/api/v1/calibration-references", headers=h)).json()
+    bw = next(x for x in lst if x["code"] == "BW-1")
+    assert bw["kind"] == "blue_wool"
+    assert bw["series"] == "iso_1_8"
+
+
+async def test_grey_scale_subtype_roundtrip(client, require_db):
+    reg = await _register(client, f"gs-{uuid.uuid4().hex[:8]}@example.com", "Grey Co")
+    h = {"Authorization": f"Bearer {reg['access_token']}"}
+
+    for code, subtype, std in [("GS-A03", "A03", "ISO 105-A03"), ("GS-A02", "A02", "ISO 105-A02")]:
+        r = await client.post(
+            "/api/v1/calibration-references",
+            json={"kind": "grey_scale", "code": code, "subtype": subtype, "standard": std},
+            headers=h,
+        )
+        assert r.status_code == 201, r.text
+        assert r.json()["subtype"] == subtype
+
+    lst = (await client.get("/api/v1/calibration-references", headers=h)).json()
+    subtypes = {x["code"]: x["subtype"] for x in lst if x["kind"] == "grey_scale"}
+    assert subtypes == {"GS-A03": "A03", "GS-A02": "A02"}
+
+
+async def test_lightbox_illuminants_and_white_tile_cert_obs(client, require_db):
+    reg = await _register(client, f"lb-{uuid.uuid4().hex[:8]}@example.com", "Light Co")
+    h = {"Authorization": f"Bearer {reg['access_token']}"}
+
+    lb = await client.post(
+        "/api/v1/calibration-references",
+        json={"kind": "lightbox", "code": "LB-1", "illuminants": ["D65", "TL84"], "lamp_hours": 120},
+        headers=h,
+    )
+    assert lb.status_code == 201, lb.text
+    assert lb.json()["illuminants"] == ["D65", "TL84"]
+
+    wt = await client.post(
+        "/api/v1/calibration-references",
+        json={
+            "kind": "white_tile",
+            "code": "WT-1",
+            "reference_values": {"L": 95.1, "a": -0.2, "b": 1.1},
+            "cert_illuminant": "D65",
+            "cert_observer": "10",
+        },
+        headers=h,
+    )
+    assert wt.status_code == 201, wt.text
+    assert wt.json()["cert_illuminant"] == "D65"
+    assert wt.json()["reference_values"] == {"L": 95.1, "a": -0.2, "b": 1.1}

@@ -17,6 +17,7 @@ _MANAGE = require_role("company_admin", "lab_manager")
 
 
 def _out(ref: CalibrationReference) -> CalibrationReferenceOut:
+    m = ref.meta or {}
     return CalibrationReferenceOut(
         id=ref.id,
         kind=ref.kind,
@@ -29,6 +30,15 @@ def _out(ref: CalibrationReference) -> CalibrationReferenceOut:
         reference_values=ref.reference_values,
         validity=service.compute_validity(ref),
         created_at=ref.created_at,
+        subtype=m.get("subtype"),
+        series=m.get("series"),
+        standard=m.get("standard"),
+        illuminants=m.get("illuminants"),
+        lamp_hours=m.get("lamp_hours"),
+        cert_illuminant=m.get("cert_illuminant"),
+        cert_observer=m.get("cert_observer"),
+        consumable_type=m.get("consumable_type"),
+        patch_values=m.get("patches"),
     )
 
 

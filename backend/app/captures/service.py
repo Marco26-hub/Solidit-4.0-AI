@@ -237,23 +237,27 @@ async def _certified_white_lab(
     session: AsyncSession, company_id: uuid.UUID, cs: CaptureSession
 ) -> list[float] | None:
     """Certified CIELAB of the linked white-tile / grey-scale reference (if it
-    carries certified values) — anchors the in-frame correction to the certificate."""
+    carries certified values) — anchors the in-frame correction to the certificate.
+
+    Prefers the true white-tile anchor; only falls back to a grey-scale reference
+    that actually carries certified values (grey scales normally do not)."""
     from app.db.models import CalibrationReference
 
-    rid = cs.white_tile_ref_id or cs.grey_scale_ref_id
-    if rid is None:
-        return None
-    ref = (
-        await session.execute(
-            select(CalibrationReference).where(
-                CalibrationReference.id == rid,
-                CalibrationReference.company_id == company_id,
+    # white tile is the metrologically correct anchor; grey scale is a fallback
+    for rid in (cs.white_tile_ref_id, cs.grey_scale_ref_id):
+        if rid is None:
+            continue
+        ref = (
+            await session.execute(
+                select(CalibrationReference).where(
+                    CalibrationReference.id == rid,
+                    CalibrationReference.company_id == company_id,
+                )
             )
-        )
-    ).scalar_one_or_none()
-    vals = ref.reference_values if ref else None
-    if vals and all(k in vals for k in ("L", "a", "b")):
-        return [float(vals["L"]), float(vals["a"]), float(vals["b"])]
+        ).scalar_one_or_none()
+        vals = ref.reference_values if ref else None
+        if vals and all(k in vals for k in ("L", "a", "b")):
+            return [float(vals["L"]), float(vals["a"]), float(vals["b"])]
     return None
 
 

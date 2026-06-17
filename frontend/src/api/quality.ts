@@ -214,6 +214,16 @@ export const createCalibrationReference = (body: {
   valid_from?: string | null;
   valid_until?: string | null;
   reference_values?: { L: number; a: number; b: number } | null;
+  // descriptive attributes (stored in meta server-side; all optional)
+  subtype?: string | null;
+  series?: string | null;
+  standard?: string | null;
+  illuminants?: string[] | null;
+  lamp_hours?: number | null;
+  cert_illuminant?: string | null;
+  cert_observer?: string | null;
+  consumable_type?: string | null;
+  patch_values?: { patch_id: string; L: number; a: number; b: number }[] | null;
 }) =>
   apiFetch<CalibrationReference>("/api/v1/calibration-references", {
     method: "POST",

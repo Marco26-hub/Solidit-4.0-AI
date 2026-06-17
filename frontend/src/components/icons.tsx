@@ -13,7 +13,10 @@ type IconName =
   | "check"
   | "x"
   | "plus"
-  | "more";
+  | "more"
+  | "eye"
+  | "sun"
+  | "drop";
 
 const PATHS: Record<IconName, string> = {
   dashboard: "M3 3h7v7H3zM14 3h7v4h-7zM14 10h7v11h-7zM3 14h7v7H3z",
@@ -29,6 +32,9 @@ const PATHS: Record<IconName, string> = {
   x: "M6 6l12 12 M18 6L6 18",
   plus: "M12 5v14 M5 12h14",
   more: "M5 12h.01 M12 12h.01 M19 12h.01",
+  eye: "M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z M12 9a3 3 0 100 6 3 3 0 000-6z",
+  sun: "M12 5v-2 M12 21v-2 M5 12H3 M21 12h-2 M6.3 6.3L4.9 4.9 M19.1 19.1l-1.4-1.4 M6.3 17.7l-1.4 1.4 M19.1 4.9l-1.4 1.4 M12 8a4 4 0 100 8 4 4 0 000-8z",
+  drop: "M12 3s6 6 6 11a6 6 0 01-12 0c0-5 6-11 6-11z",
 };
 
 export function Icon({
