@@ -234,6 +234,9 @@ function JobPanel({
   const [methodCode, setMethodCode] = useState(defaultMethod);
   const [rows, setRows] = useState<FiberRow[]>([]);
   const [reportNo, setReportNo] = useState<string | null>(null);
+  // true when the rows below were pre-filled by the Vision analysis (so the
+  // operator knows to verify/correct rather than that they typed them)
+  const [prefilled, setPrefilled] = useState(false);
 
   // auto-load the multifibre fibres of the chosen norm (the operator just fills
   // ΔE/grade; "+ fibra" stays for adding extra fibres). Reloads when the method
@@ -244,6 +247,7 @@ function JobPanel({
     if (!methodCode || !methodsReady || !profilesReady) return;
     const fibers = fibersForMethod(methodCode, methods.data ?? [], profiles.data ?? []);
     setRows(fibers.map((f) => ({ fiber: f, delta_e: "", gray_scale_grade: "" })));
+    setPrefilled(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [methodCode, methodsReady, profilesReady]);
 
@@ -321,6 +325,7 @@ function JobPanel({
             gray_scale_grade: v.gray_scale_grade != null ? String(v.gray_scale_grade) : "",
           }))
         );
+        setPrefilled(true);
       }
     },
   });
@@ -347,9 +352,20 @@ function JobPanel({
 
   return (
     <Card>
-      <div className="mb-2 font-medium">Risultato manuale</div>
+      <div className="mb-1 flex flex-wrap items-center gap-2">
+        <span className="font-medium">Risultato della prova</span>
+        {prefilled && <Badge kind="warn">precompilato da Vision — verifica</Badge>}
+      </div>
+      <div className="mb-3 rounded-lg bg-slate-50 p-2 text-xs leading-relaxed text-steel">
+        È la valutazione che finisce nel <b>report</b>. Per ogni fibra inserisci{" "}
+        <b>ΔE</b> (differenza di colore misurata) e il <b>grado scala grigi</b> (5 = nessuna
+        variazione/macchia → 1 = forte). Puoi compilarlo a mano oppure lasciare che l'
+        <b>Analisi Vision</b> qui sotto lo precompili dalla foto: in quel caso{" "}
+        <b>verifica/correggi</b> i valori e poi <b>Salva risultato</b>. <b>Genera report</b>{" "}
+        produce il PDF con sigillo.
+      </div>
       <div className="grid gap-2 md:grid-cols-3">
-        <Field label="Metodo">
+        <Field label="Metodo (norma di solidità)">
           <MethodSelect
             methods={methods.data ?? []}
             value={methodCode}
@@ -359,6 +375,14 @@ function JobPanel({
         </Field>
       </div>
 
+      {rows.length > 0 && (
+        <div className="mt-3 hidden items-center gap-2 px-1 text-[11px] font-medium uppercase tracking-wide text-steel sm:flex">
+          <span className="flex-1">Fibra</span>
+          <span className="flex-1">ΔE</span>
+          <span className="flex-1">Grado scala grigi</span>
+          <span className="w-12 shrink-0" />
+        </div>
+      )}
       <div className="mt-2 space-y-2">
         {rows.map((r, i) => (
           <div key={i} className="flex flex-wrap items-center gap-2">
