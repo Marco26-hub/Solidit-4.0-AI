@@ -9,7 +9,7 @@ services:
     runtime: docker
     dockerfilePath: ./infra/Dockerfile.prod
     dockerContext: .
-    plan: starter
+    plan: free
     healthCheckPath: /healthz
     # run migrations once before each deploy goes live
     preDeployCommand: python -m alembic upgrade head
