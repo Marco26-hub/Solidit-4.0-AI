@@ -22,9 +22,11 @@ services:
       - key: APP_ENV
         value: production
       - key: CORS_ORIGINS
-        sync: false # e.g. https://solidita.vercel.app
+        value: https://solidit-4-0-ai.vercel.app
       - key: PUBLIC_BASE_URL
-        sync: false # e.g. https://solidita-backend.onrender.com
+        value: https://solidita-backend.onrender.com
+      - key: WEB_BASE_URL
+        value: https://solidit-4-0-ai.vercel.app
       # object storage (Cloudflare R2 / AWS S3 / Backblaze B2)
       - key: S3_BUCKET
         sync: false
