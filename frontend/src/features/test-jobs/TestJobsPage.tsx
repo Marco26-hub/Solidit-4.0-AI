@@ -27,6 +27,7 @@ import {
   ErrorText,
   Field,
   PageHeader,
+  Select,
   TextInput,
   statusBadgeKind,
 } from "@/components/ui";
@@ -83,24 +84,20 @@ export function TestJobsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Test Jobs" subtitle="Prove, risultati manuali e report" />
+      <PageHeader title="Prove" subtitle="Prove, risultati manuali e report" />
 
       <Card>
         <div className="mb-3 font-medium">Nuova prova</div>
         <div className="grid gap-3 md:grid-cols-4">
           <Field label="Brand spec">
-            <select
-              className="w-full rounded border px-2 py-1.5 text-sm"
-              value={brandId}
-              onChange={(e) => setBrandId(e.target.value)}
-            >
+            <Select value={brandId} onChange={(e) => setBrandId(e.target.value)}>
               <option value="">—</option>
               {(specs.data ?? []).map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.brand_name}
                 </option>
               ))}
-            </select>
+            </Select>
           </Field>
           <Field label="Metodo (solidità)">
             <MethodSelect
@@ -120,8 +117,7 @@ export function TestJobsPage() {
 
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           <Field label="Articolo di produzione (rif. colour-change)">
-            <select
-              className="w-full rounded border px-2 py-1.5 text-sm"
+            <Select
               value={articleId}
               onChange={(e) => {
                 setArticleId(e.target.value);
@@ -135,11 +131,10 @@ export function TestJobsPage() {
                   {a.name ? ` · ${a.name}` : ""}
                 </option>
               ))}
-            </select>
+            </Select>
           </Field>
           <Field label="Variante (colore/lotto)">
-            <select
-              className="w-full rounded border px-2 py-1.5 text-sm"
+            <Select
               value={variantId}
               onChange={(e) => setVariantId(e.target.value)}
               disabled={!selectedArticle}
@@ -152,7 +147,7 @@ export function TestJobsPage() {
                   {v.reference_lab ? "" : " (no Lab rif.)"}
                 </option>
               ))}
-            </select>
+            </Select>
           </Field>
         </div>
 
@@ -366,27 +361,37 @@ function JobPanel({
 
       <div className="mt-2 space-y-2">
         {rows.map((r, i) => (
-          <div key={i} className="grid grid-cols-4 gap-2">
+          <div key={i} className="flex flex-wrap items-center gap-2">
             <TextInput
               placeholder="fibra"
+              className="basis-full sm:flex-1 sm:basis-0"
               value={r.fiber}
               onChange={(e) => setRow(i, { fiber: e.target.value })}
             />
             <TextInput
               type="number"
+              inputMode="decimal"
               step="0.01"
               placeholder="ΔE"
+              className="min-w-0 flex-1"
               value={r.delta_e}
               onChange={(e) => setRow(i, { delta_e: e.target.value })}
             />
             <TextInput
               type="number"
+              inputMode="decimal"
               step="0.5"
-              placeholder="grey scale"
+              placeholder="grado"
+              className="min-w-0 flex-1"
               value={r.gray_scale_grade}
               onChange={(e) => setRow(i, { gray_scale_grade: e.target.value })}
             />
-            <Button variant="ghost" onClick={() => setRows((rs) => rs.filter((_, idx) => idx !== i))}>
+            <Button
+              variant="ghost"
+              className="shrink-0 px-3"
+              aria-label="rimuovi fibra"
+              onClick={() => setRows((rs) => rs.filter((_, idx) => idx !== i))}
+            >
               ✕
             </Button>
           </div>
@@ -413,18 +418,14 @@ function JobPanel({
         <div className="mb-2 font-medium">Analisi Vision — foto multifibra (staining)</div>
         <div className="grid gap-2 md:grid-cols-3">
           <Field label="Lotto multifibra (batch)">
-            <select
-              className="w-full rounded border px-2 py-1.5 text-sm"
-              value={visBatch}
-              onChange={(e) => setVisBatch(e.target.value)}
-            >
+            <Select value={visBatch} onChange={(e) => setVisBatch(e.target.value)}>
               <option value="">—</option>
               {(batches.data ?? []).map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.batch_code} {b.strip_profile_code ? `(${b.strip_profile_code})` : ""}
                 </option>
               ))}
-            </select>
+            </Select>
           </Field>
           <Field label="Foto multifibra post-prova">
             <PhotoInput onFile={setVisFile} />
@@ -440,32 +441,24 @@ function JobPanel({
         </div>
         <div className="mt-2 grid gap-2 md:grid-cols-2">
           <Field label="Light box (riferimento)">
-            <select
-              className="w-full rounded border px-2 py-1.5 text-sm"
-              value={lightboxRef}
-              onChange={(e) => setLightboxRef(e.target.value)}
-            >
+            <Select value={lightboxRef} onChange={(e) => setLightboxRef(e.target.value)}>
               <option value="">— nessuno —</option>
               {usableRefs("lightbox").map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.code} {r.validity === "expiring" ? "(in scadenza)" : ""}
                 </option>
               ))}
-            </select>
+            </Select>
           </Field>
           <Field label="Scala grigia (riferimento)">
-            <select
-              className="w-full rounded border px-2 py-1.5 text-sm"
-              value={greyRef}
-              onChange={(e) => setGreyRef(e.target.value)}
-            >
+            <Select value={greyRef} onChange={(e) => setGreyRef(e.target.value)}>
               <option value="">— nessuno —</option>
               {usableRefs("grey_scale").map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.code} {r.validity === "expiring" ? "(in scadenza)" : ""}
                 </option>
               ))}
-            </select>
+            </Select>
           </Field>
         </div>
         <div className="mt-2 flex flex-wrap gap-4">

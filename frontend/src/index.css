@@ -25,3 +25,26 @@ body {
   outline: 2px solid theme("colors.brand.500");
   outline-offset: 1px;
 }
+
+/* Mobile-first form controls: comfortable touch targets for native selects
+   and NO iOS Safari auto-zoom on focus (triggered by <16px font). On desktop
+   the text-sm utilities take over (this media query no longer applies). */
+select {
+  min-height: 44px;
+}
+
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* respect the iPhone home-indicator / notch safe areas */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.h-safe-nav {
+  height: calc(64px + env(safe-area-inset-bottom));
+}

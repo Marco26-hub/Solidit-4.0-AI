@@ -1,9 +1,13 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { useState } from "react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 
 import { Icon, type IconName } from "@/components/icons";
 import { useAuth } from "@/lib/auth";
 
-const NAV: { to: string; label: string; icon: IconName; end?: boolean }[] = [
+type NavItem = { to: string; label: string; icon: IconName; end?: boolean };
+
+// Full navigation (desktop sidebar shows all of it).
+const NAV: NavItem[] = [
   { to: "/", label: "Dashboard", icon: "dashboard", end: true },
   { to: "/brand-specs", label: "Brand", icon: "tag" },
   { to: "/articles", label: "Articoli", icon: "layers" },
@@ -15,8 +19,25 @@ const NAV: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: "/devices", label: "Device", icon: "device" },
 ];
 
+// Mobile bottom bar shows the 4 most-used; the rest live behind "Altro".
+const PRIMARY: NavItem[] = [
+  { to: "/", label: "Dashboard", icon: "dashboard", end: true },
+  { to: "/test-jobs", label: "Prove", icon: "clipboard" },
+  { to: "/ledger", label: "Report", icon: "doc" },
+  { to: "/articles", label: "Articoli", icon: "layers" },
+];
+const PRIMARY_PATHS = new Set(PRIMARY.map((n) => n.to));
+const SECONDARY: NavItem[] = [
+  ...NAV.filter((n) => !PRIMARY_PATHS.has(n.to)),
+  { to: "/billing", label: "Abbonamento", icon: "tag" },
+];
+
 export function Layout() {
   const { profile, logout } = useAuth();
+  const location = useLocation();
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  const moreActive = SECONDARY.some((n) => location.pathname.startsWith(n.to));
 
   return (
     <div className="min-h-screen bg-slate-100 text-ink">
@@ -48,7 +69,7 @@ export function Layout() {
           <button
             onClick={logout}
             title="Logout"
-            className="grid h-9 w-9 place-items-center rounded-lg text-steel hover:bg-slate-100"
+            className="grid h-11 w-11 place-items-center rounded-lg text-steel hover:bg-slate-100"
           >
             <Icon name="logout" />
           </button>
@@ -77,21 +98,58 @@ export function Layout() {
           </nav>
         </aside>
 
-        {/* content */}
-        <main className="mx-auto w-full max-w-5xl flex-1 p-4 pb-24 md:p-6 md:pb-8">
+        {/* content — extra bottom padding on mobile to clear the fixed nav + safe area */}
+        <main className="mx-auto w-full max-w-5xl flex-1 p-4 pb-28 md:p-6 md:pb-8">
           <Outlet />
         </main>
       </div>
 
-      {/* mobile bottom nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-9 border-t border-slate-200 bg-white md:hidden">
-        {NAV.map((n) => (
+      {/* mobile "Altro" sheet */}
+      {moreOpen && (
+        <div className="fixed inset-0 z-30 md:hidden" role="dialog" aria-modal="true">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setMoreOpen(false)} />
+          <div className="absolute inset-x-0 bottom-0 rounded-t-2xl border-t border-slate-200 bg-white p-4 pb-safe shadow-2xl">
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-slate-300" />
+            <div className="mb-3 text-sm font-semibold text-ink">Altro</div>
+            <div className="grid grid-cols-3 gap-2">
+              {SECONDARY.map((n) => (
+                <NavLink
+                  key={n.to}
+                  to={n.to}
+                  onClick={() => setMoreOpen(false)}
+                  className={({ isActive }) =>
+                    `flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 text-xs font-medium ${
+                      isActive
+                        ? "border-brand-200 bg-brand-50 text-brand-600"
+                        : "border-slate-200 text-steel hover:bg-slate-50"
+                    }`
+                  }
+                >
+                  <Icon name={n.icon} width={22} height={22} />
+                  <span className="text-center leading-tight">{n.label}</span>
+                </NavLink>
+              ))}
+            </div>
+            <button
+              onClick={() => setMoreOpen(false)}
+              className="mt-3 w-full rounded-lg border border-slate-200 py-2.5 text-sm font-medium text-steel"
+            >
+              Chiudi
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* mobile bottom nav: 4 primary + Altro */}
+      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-slate-200 bg-white pb-safe md:hidden">
+        {PRIMARY.map((n) => (
           <NavLink
             key={n.to}
             to={n.to}
             end={n.end}
+            onClick={() => setMoreOpen(false)}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium ${
+              `flex min-h-[56px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium ${
                 isActive ? "text-brand-600" : "text-steel"
               }`
             }
@@ -100,6 +158,15 @@ export function Layout() {
             {n.label}
           </NavLink>
         ))}
+        <button
+          onClick={() => setMoreOpen((v) => !v)}
+          className={`flex min-h-[56px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium ${
+            moreActive || moreOpen ? "text-brand-600" : "text-steel"
+          }`}
+        >
+          <Icon name="more" width={22} height={22} />
+          Altro
+        </button>
       </nav>
     </div>
   );

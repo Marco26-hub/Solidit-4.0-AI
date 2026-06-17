@@ -12,7 +12,8 @@ type IconName =
   | "logout"
   | "check"
   | "x"
-  | "plus";
+  | "plus"
+  | "more";
 
 const PATHS: Record<IconName, string> = {
   dashboard: "M3 3h7v7H3zM14 3h7v4h-7zM14 10h7v11h-7zM3 14h7v7H3z",
@@ -27,6 +28,7 @@ const PATHS: Record<IconName, string> = {
   check: "M5 13l4 4L19 7",
   x: "M6 6l12 12 M18 6L6 18",
   plus: "M12 5v14 M5 12h14",
+  more: "M5 12h.01 M12 12h.01 M19 12h.01",
 };
 
 export function Icon({
