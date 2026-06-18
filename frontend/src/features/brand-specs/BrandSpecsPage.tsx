@@ -11,7 +11,18 @@ import {
 } from "@/api/quality";
 import type { AcceptanceRuleInput } from "@/api/types";
 import { MethodSelect } from "@/components/MethodSelect";
-import { Badge, Button, Card, EmptyState, ErrorText, Field, PageHeader, TextInput } from "@/components/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  ErrorText,
+  Field,
+  Hint,
+  PageHeader,
+  Select,
+  TextInput,
+} from "@/components/ui";
 import { ALL_FIBERS, fibersForMethod } from "@/lib/fibers";
 
 const emptyRule = (): AcceptanceRuleInput => ({
@@ -111,7 +122,14 @@ export function BrandSpecsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Brand Specs" subtitle="Capitolati brand e regole di accettazione" />
+      <PageHeader title="Capitolati brand" subtitle="Capitolati brand e regole di accettazione" />
+
+      <Card className="border-brand-200 bg-brand-50">
+        <p className="text-sm text-steel">
+          <b>Opzionale.</b> Le regole del capitolato decidono se una prova è <b>conforme</b>. Senza
+          regole, la prova mostra i valori senza verdetto (pre-valutazione assistita).
+        </p>
+      </Card>
 
       <Card>
         <div className="mb-2 font-medium">Specifiche esistenti</div>
@@ -143,7 +161,9 @@ export function BrandSpecsPage() {
                       />
                     </label>
                   )}
-                  <Badge kind={s.is_active ? "pass" : "muted"}>{s.is_active ? "attivo" : "off"}</Badge>
+                  <Badge kind={s.is_active ? "pass" : "muted"}>
+                    {s.is_active ? "Attivo" : "Disattivo"}
+                  </Badge>
                 </div>
               </div>
             );
@@ -192,7 +212,6 @@ export function BrandSpecsPage() {
             return (
             <div key={i} className="grid grid-cols-2 gap-2 md:grid-cols-6">
               <MethodSelect
-                className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm min-h-[40px]"
                 methods={methods.data ?? []}
                 value={r.test_method_code}
                 emptyLabel="metodo…"
@@ -201,8 +220,7 @@ export function BrandSpecsPage() {
                   setRule(i, { test_method_code: code, fiber_code: null })
                 }
               />
-              <select
-                className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+              <Select
                 value={r.fiber_code ?? ""}
                 onChange={(e) => setRule(i, { fiber_code: e.target.value || null })}
               >
@@ -212,29 +230,25 @@ export function BrandSpecsPage() {
                     {f}
                   </option>
                 ))}
-              </select>
+              </Select>
               <TextInput
                 type="number"
                 step="0.01"
-                placeholder="max ΔE"
+                placeholder="ΔE max"
                 value={r.max_delta_e ?? ""}
                 onChange={(e) => setRule(i, { max_delta_e: numOrNull(e.target.value) })}
               />
               <TextInput
                 type="number"
                 step="0.5"
-                placeholder="min grey"
+                placeholder="grado min (scala grigi)"
                 value={r.min_gray_scale_grade ?? ""}
                 onChange={(e) => setRule(i, { min_gray_scale_grade: numOrNull(e.target.value) })}
               />
-              <select
-                className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
-                value={r.severity}
-                onChange={(e) => setRule(i, { severity: e.target.value })}
-              >
-                <option value="blocking">blocking</option>
-                <option value="warning">warning</option>
-              </select>
+              <Select value={r.severity} onChange={(e) => setRule(i, { severity: e.target.value })}>
+                <option value="blocking">Bloccante (non conforme)</option>
+                <option value="warning">Avviso (segnalazione)</option>
+              </Select>
               <Button variant="ghost" type="button" onClick={() => setRules((rs) => rs.filter((_, idx) => idx !== i))}>
                 ✕
               </Button>
@@ -246,10 +260,12 @@ export function BrandSpecsPage() {
           <Button variant="ghost" type="button" onClick={() => setRules((rs) => [...rs, emptyRule()])}>
             + regola
           </Button>
-          <Button type="button" disabled={!brandName || create.isPending} onClick={() => create.mutate()}>
-            {create.isPending ? "…" : "Crea brand spec"}
+          <Button type="button" loading={create.isPending} disabled={!brandName} onClick={() => create.mutate()}>
+            Crea brand spec
           </Button>
         </div>
+        {!brandName && <Hint>Inserisci il nome del brand per salvare.</Hint>}
+        <p className="mt-1 text-xs text-steel">Le righe senza metodo verranno ignorate.</p>
         <ErrorText error={create.error} />
       </Card>
     </div>

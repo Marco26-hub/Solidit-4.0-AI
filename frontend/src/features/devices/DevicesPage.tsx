@@ -15,6 +15,7 @@ import {
   Card,
   ErrorText,
   Field,
+  Hint,
   PageHeader,
   Select,
   TextInput,
@@ -219,10 +220,14 @@ export function DevicesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Devices" subtitle="iPhone autorizzati e calibrazione" />
+      <PageHeader title="Dispositivi e standard" subtitle="iPhone autorizzati e riferimenti fisici per il colore" />
 
       <Card>
-        <div className="mb-2 font-medium">Dispositivi</div>
+        <div className="mb-1 font-medium">iPhone autorizzati</div>
+        <p className="mb-2 text-xs text-steel">
+          I telefoni autorizzati a scattare le foto delle prove. Registra qui ogni iPhone usato in
+          laboratorio.
+        </p>
         <ErrorText error={devices.error} />
         <div className="divide-y">
           {(devices.data ?? []).map((d) => (
@@ -236,40 +241,59 @@ export function DevicesPage() {
               <div className="flex gap-2">
                 {d.mdm_managed && <Badge kind="muted">MDM</Badge>}
                 <Badge kind={d.active_d65_matrix ? "pass" : "warn"}>
-                  {d.active_d65_matrix ? "calibrato D65" : "no calibrazione"}
+                  {d.active_d65_matrix ? "calibrato D65" : "da calibrare"}
                 </Badge>
               </div>
             </div>
           ))}
-          {devices.data?.length === 0 && <p className="py-2 text-steel">Nessun dispositivo.</p>}
+          {devices.data?.length === 0 && (
+            <p className="py-2 text-steel">
+              Nessun iPhone registrato. Aggiungi qui sotto il telefono che userai per le foto.
+            </p>
+          )}
         </div>
       </Card>
 
       <Card>
-        <div className="mb-3 font-medium">Registra dispositivo</div>
+        <div className="mb-3 font-medium">Registra iPhone</div>
         <div className="grid gap-3 md:grid-cols-2">
-          <Field label="Hardware UUID">
-            <TextInput value={hwid} onChange={(e) => setHwid(e.target.value)} />
+          <Field
+            label="Identificativo iPhone"
+            required
+            hint="Codice univoco dell'iPhone — nell'app Solidità: Impostazioni → Info dispositivo."
+          >
+            <TextInput value={hwid} onChange={(e) => setHwid(e.target.value)} placeholder="es. 00008130-0011…" />
           </Field>
           <Field label="Modello">
             <TextInput value={model} onChange={(e) => setModel(e.target.value)} placeholder="iPhone 16 Pro" />
           </Field>
           <Field label="Nome">
-            <TextInput value={name} onChange={(e) => setName(e.target.value)} />
+            <TextInput
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="es. iPhone reparto tintoria"
+            />
           </Field>
           <label className="flex items-center gap-2 self-end text-sm text-steel">
             <input type="checkbox" checked={mdm} onChange={(e) => setMdm(e.target.checked)} />
-            MDM managed
+            Gestito da MDM aziendale (lascia deselezionato se non sai cosa significa)
           </label>
         </div>
         <div className="mt-3">
-          <Button type="button" disabled={!hwid || create.isPending} onClick={() => create.mutate()}>
-            {create.isPending ? "…" : "Registra"}
+          <Button type="button" loading={create.isPending} disabled={!hwid} onClick={() => create.mutate()}>
+            Registra
           </Button>
+          {!hwid && <Hint>Inserisci l'identificativo dell'iPhone per registrarlo.</Hint>}
         </div>
         <ErrorText error={create.error} />
       </Card>
 
+      <div className="pt-1">
+        <h2 className="text-base font-semibold text-ink">Riferimenti fisici per il colore</h2>
+        <p className="text-xs text-steel">
+          Scale grigi, scala dei blu, piastrina, cabina di luce — con certificato e scadenza.
+        </p>
+      </div>
       <CalibrationReferences />
     </div>
   );
@@ -407,7 +431,17 @@ function CalibrationReferences() {
               <div className="flex items-center gap-2">
                 <Badge kind={b.kind}>{b.label}</Badge>
                 {r.status !== "retired" && (
-                  <Button variant="ghost" onClick={() => retire.mutate(r.id)}>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Dismettere lo standard «${r.code}»?\n\nNon potrà più essere collegato a nuove catture e le prove che lo usano verranno bloccate.`
+                        )
+                      )
+                        retire.mutate(r.id);
+                    }}
+                  >
                     Dismetti
                   </Button>
                 )}
@@ -415,7 +449,12 @@ function CalibrationReferences() {
             </div>
           );
         })}
-        {refs.data?.length === 0 && <p className="py-2 text-steel">Nessun riferimento.</p>}
+        {refs.data?.length === 0 && (
+          <p className="py-2 text-steel">
+            Nessuno standard caricato. Carica scale grigi, scala dei blu, piastrina o cabina di luce
+            — inizia da «Carica uno standard».
+          </p>
+        )}
       </div>
 
       {/* guided add: step 1 purpose → step 2 instrument → form */}
@@ -659,9 +698,14 @@ function CalibrationReferences() {
             )}
 
             <div className="mt-4">
-              <Button type="button" disabled={!canSave} onClick={() => create.mutate()}>
-                {create.isPending ? "…" : "Salva standard"}
+              <Button type="button" loading={create.isPending} disabled={!canSave} onClick={() => create.mutate()}>
+                Salva standard
               </Button>
+              {!form.code ? (
+                <Hint>Inserisci almeno il Codice per salvare.</Hint>
+              ) : instr?.needsLab && !labOk ? (
+                <Hint>Inserisci i valori L*a*b* dal certificato per salvare.</Hint>
+              ) : null}
             </div>
             <ErrorText error={create.error} />
           </>

@@ -26,11 +26,21 @@ import {
   Card,
   ErrorText,
   Field,
+  Hint,
   PageHeader,
   Select,
   TextInput,
   statusBadgeKind,
 } from "@/components/ui";
+
+// DB status enum → Italian display label (value stays for queries/badges)
+const JOB_STATUS_IT: Record<string, string> = {
+  created: "Creata",
+  passed: "Conforme",
+  failed: "Non conforme",
+  completed: "Completata",
+};
+const jobStatusLabel = (s: string) => JOB_STATUS_IT[s] ?? s;
 
 type FiberRow = { fiber: string; delta_e: string; gray_scale_grade: string };
 type VisionFiber = {
@@ -61,6 +71,8 @@ export function TestJobsPage() {
 
   const selectedArticle = (articles.data ?? []).find((a) => a.id === articleId);
 
+  const [selected, setSelected] = useState<string | null>(null);
+
   const createJob = useMutation({
     mutationFn: () =>
       createTestJob({
@@ -71,16 +83,15 @@ export function TestJobsPage() {
         article_id: articleId || null,
         article_variant_id: variantId || null,
       }),
-    onSuccess: () => {
+    onSuccess: (job) => {
       qc.invalidateQueries({ queryKey: ["jobs"] });
       setArticle("");
       setLot("");
       setArticleId("");
       setVariantId("");
+      if (job?.id) setSelected(job.id); // open the new test straight away
     },
   });
-
-  const [selected, setSelected] = useState<string | null>(null);
 
   return (
     <div className="space-y-6">
@@ -107,16 +118,20 @@ export function TestJobsPage() {
               emptyLabel="— scegli —"
             />
           </Field>
-          <Field label="Articolo (testo)">
-            <TextInput value={article} onChange={(e) => setArticle(e.target.value)} />
+          <Field label="Codice articolo (libero)">
+            <TextInput value={article} onChange={(e) => setArticle(e.target.value)} placeholder="es. ART-001" />
           </Field>
           <Field label="Lotto">
-            <TextInput value={lot} onChange={(e) => setLot(e.target.value)} />
+            <TextInput value={lot} onChange={(e) => setLot(e.target.value)} placeholder="es. L-2026-014" />
           </Field>
         </div>
 
-        <div className="mt-3 grid gap-3 md:grid-cols-2">
-          <Field label="Articolo di produzione (rif. colour-change)">
+        <p className="mt-3 text-xs text-steel">
+          Articolo a catalogo + variante servono solo per la <b>variazione di colore</b>{" "}
+          (colour-change). Per la sola prova di macchia puoi lasciarli vuoti.
+        </p>
+        <div className="mt-2 grid gap-3 md:grid-cols-2">
+          <Field label="Articolo a catalogo (per variazione colore)">
             <Select
               value={articleId}
               onChange={(e) => {
@@ -152,9 +167,15 @@ export function TestJobsPage() {
         </div>
 
         <div className="mt-3">
-          <Button type="button" disabled={createJob.isPending} onClick={() => createJob.mutate()}>
-            {createJob.isPending ? "…" : "Crea prova"}
+          <Button
+            type="button"
+            loading={createJob.isPending}
+            disabled={!methodCode}
+            onClick={() => createJob.mutate()}
+          >
+            Crea prova
           </Button>
+          {!methodCode && <Hint>Scegli il metodo (norma di solidità) per creare la prova.</Hint>}
         </div>
         <ErrorText error={createJob.error} />
       </Card>
@@ -162,17 +183,17 @@ export function TestJobsPage() {
       <Card>
         <div className="mb-3 flex items-center justify-between">
           <span className="font-medium">Prove</span>
-          <select
-            className="rounded border px-2 py-1 text-sm"
+          <Select
+            className="w-auto"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option value="">tutti gli stati</option>
-            <option value="created">created</option>
-            <option value="passed">passed</option>
-            <option value="failed">failed</option>
-            <option value="completed">completed</option>
-          </select>
+            <option value="">Tutti gli stati</option>
+            <option value="created">Creata</option>
+            <option value="passed">Conforme</option>
+            <option value="failed">Non conforme</option>
+            <option value="completed">Completata</option>
+          </Select>
         </div>
         <ErrorText error={jobs.error} />
         <div className="overflow-x-auto">
@@ -191,11 +212,14 @@ export function TestJobsPage() {
                 <td className="py-1.5">{j.article_code ?? "—"}</td>
                 <td>{j.lot_code ?? "—"}</td>
                 <td>
-                  <Badge kind={statusBadgeKind(j.status)}>{j.status}</Badge>
+                  <Badge kind={statusBadgeKind(j.status)}>{jobStatusLabel(j.status)}</Badge>
                 </td>
                 <td className="text-right">
-                  <Button variant="ghost" onClick={() => setSelected(selected === j.id ? null : j.id)}>
-                    {selected === j.id ? "chiudi" : "apri"}
+                  <Button
+                    variant={selected === j.id ? "ghost" : "primary"}
+                    onClick={() => setSelected(selected === j.id ? null : j.id)}
+                  >
+                    {selected === j.id ? "Chiudi" : "Apri prova ›"}
                   </Button>
                 </td>
               </tr>
@@ -279,6 +303,7 @@ function JobPanel({
 
   const setRow = (i: number, patch: Partial<FiberRow>) =>
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+  const hasResult = (results.data?.length ?? 0) > 0;
 
   // ── Vision: foto multifibra post-prova → analisi staining ──────────────────
   const batches = useQuery({ queryKey: ["batches"], queryFn: listBatches });
@@ -421,27 +446,44 @@ function JobPanel({
           </div>
         ))}
       </div>
-      <div className="mt-3 flex gap-2">
+      <div className="mt-3 flex flex-wrap gap-2">
         <Button
           variant="ghost"
           onClick={() => setRows((rs) => [...rs, { fiber: "", delta_e: "", gray_scale_grade: "" }])}
         >
           + fibra
         </Button>
-        <Button disabled={!methodCode || submit.isPending} onClick={() => submit.mutate()}>
-          {submit.isPending ? "…" : "Salva risultato"}
+        <Button loading={submit.isPending} disabled={!methodCode} onClick={() => submit.mutate()}>
+          Salva risultato
         </Button>
-        <Button variant="ghost" disabled={report.isPending} onClick={() => report.mutate()}>
-          {report.isPending ? "…" : "Genera report"}
+        <Button
+          variant={hasResult ? "primary" : "ghost"}
+          loading={report.isPending}
+          disabled={!hasResult}
+          onClick={() => report.mutate()}
+        >
+          Genera report
         </Button>
       </div>
+      {!hasResult && <Hint>Salva prima un risultato per poter generare il report.</Hint>}
+      {submit.isSuccess && hasResult && !reportNo && (
+        <p className="mt-2 text-xs text-emerald-700">Risultato salvato — ora puoi Generare report.</p>
+      )}
       <ErrorText error={submit.error || report.error} />
-      {reportNo && <p className="mt-2 text-sm text-green-700">Report generato: {reportNo} (vedi Ledger)</p>}
+      {reportNo && (
+        <p className="mt-2 text-sm text-green-700">
+          Report generato: {reportNo} — lo trovi in <b>Report</b> (verifica, finalizza, scarica PDF).
+        </p>
+      )}
 
       <div className="mt-5 border-t pt-4">
-        <div className="mb-2 font-medium">Analisi Vision — foto multifibra (staining)</div>
+        <div className="mb-2 font-medium">Analisi Vision — macchia su multifibra (staining)</div>
+        <p className="mb-2 text-xs text-steel">
+          Scatta la foto della striscia multifibra dopo la prova: l'app misura quanto colore si è
+          trasferito su ogni fibra e precompila i campi del risultato sopra.
+        </p>
         <div className="grid gap-2 md:grid-cols-3">
-          <Field label="Lotto multifibra (batch)">
+          <Field label="Lotto multifibra">
             <Select value={visBatch} onChange={(e) => setVisBatch(e.target.value)}>
               <option value="">—</option>
               {(batches.data ?? []).map((b) => (
@@ -456,10 +498,11 @@ function JobPanel({
           </Field>
           <div className="flex items-end">
             <Button
-              disabled={!visBatch || !visFile || !methodCode || vision.isPending}
+              loading={vision.isPending}
+              disabled={!visBatch || !visFile || !methodCode}
               onClick={() => vision.mutate()}
             >
-              {vision.isPending ? "…" : "Analizza staining"}
+              Analizza macchia
             </Button>
           </div>
         </div>
@@ -492,35 +535,40 @@ function JobPanel({
               checked={inframeGrey}
               onChange={(e) => setInframeGrey(e.target.checked)}
             />
-            Foto con scala grigia in-frame (correzione colore ISO 105-A11)
+            La foto include una scala grigi/piastrina per la correzione colore (ISO 105-A11)
           </label>
           <label className="flex items-center gap-2 text-sm text-steel">
             <input type="checkbox" checked={strict} onChange={(e) => setStrict(e.target.checked)} />
-            Modalità accreditamento (rifiuta cattura di qualità insufficiente)
+            Modalità severa: rifiuta foto di qualità insufficiente
           </label>
         </div>
         <p className="mt-1 text-xs text-steel">
-          Foto della sola striscia multifibra: le bande vengono riconosciute in ordine secondo la
-          norma del lotto. I valori ΔE/grado della foto precompilano i campi di "Risultato manuale"
-          sopra — verifica/correggi e poi salva.
+          Inquadra la sola striscia multifibra: le bande vengono riconosciute in ordine secondo la
+          norma del lotto. I valori ΔE/grado precompilano il <b>Risultato della prova</b> sopra —
+          verifica/correggi e poi salva.
         </p>
         <ErrorText error={vision.error} />
       </div>
 
       <div className="mt-5 border-t pt-4">
-        <div className="mb-2 font-medium">Analisi Vision — colour-change (vs variante)</div>
+        <div className="mb-2 font-medium">Analisi Vision — variazione di colore (colour-change)</div>
         {hasVariant ? (
           <>
+            <p className="mb-2 text-xs text-steel">
+              Confronta il tessuto dopo la prova con il colore di riferimento della variante: misura
+              quanto il campione stesso ha cambiato colore.
+            </p>
             <div className="grid gap-2 md:grid-cols-3">
               <Field label="Foto tessuto post-prova">
                 <PhotoInput onFile={setCcFile} />
               </Field>
               <div className="flex items-end md:col-span-2">
                 <Button
-                  disabled={!ccFile || !methodCode || colourChange.isPending}
+                  loading={colourChange.isPending}
+                  disabled={!ccFile || !methodCode}
                   onClick={() => colourChange.mutate()}
                 >
-                  {colourChange.isPending ? "…" : "Analizza colour-change"}
+                  Analizza variazione
                 </Button>
               </div>
             </div>

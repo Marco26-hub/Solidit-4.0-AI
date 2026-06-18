@@ -2,8 +2,19 @@ import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 import type { CompanyBrief } from "@/api/types";
-import { Button, ErrorText, Field, Spinner, TextInput } from "@/components/ui";
+import { Button, Field, TextInput } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
+
+/** Map any login failure to a friendly Italian message (never raw English). */
+function loginErrorMessage(error: unknown): string {
+  const raw = (error instanceof Error ? error.message : String(error ?? "")).toLowerCase();
+  if (raw.includes("invalid email") || raw.includes("unauthorized") || raw.includes("password"))
+    return "Email o password non corretti. Riprova.";
+  if (raw.includes("azienda")) return "Nessuna azienda associata a questo account.";
+  if (raw.includes("failed to fetch") || raw.includes("network") || raw.includes("load"))
+    return "Connessione non riuscita. Controlla la rete e riprova.";
+  return "Accesso non riuscito. Riprova.";
+}
 
 export function LoginPage() {
   const { login, selectCompany } = useAuth();
@@ -69,7 +80,7 @@ export function LoginPage() {
                 <span className="text-xs uppercase text-steel">{c.role}</span>
               </button>
             ))}
-            <ErrorText error={error} />
+            {error != null && <p className="text-sm text-red-600">{loginErrorMessage(error)}</p>}
           </div>
         ) : (
           <form onSubmit={onLogin} className="space-y-4">
@@ -92,10 +103,13 @@ export function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </Field>
-            <ErrorText error={error} />
-            <Button type="submit" disabled={busy} className="w-full">
-              {busy ? <Spinner /> : "Accedi"}
+            {error != null && <p className="text-sm text-red-600">{loginErrorMessage(error)}</p>}
+            <Button type="submit" loading={busy} disabled={!email || !password} className="w-full">
+              Accedi
             </Button>
+            <p className="text-center text-xs text-steel">
+              Problemi di accesso? Contatta l'amministratore della tua azienda.
+            </p>
           </form>
         )}
       </div>

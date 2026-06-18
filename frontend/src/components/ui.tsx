@@ -26,8 +26,13 @@ export function Button({
   children,
   variant = "primary",
   className = "",
+  loading = false,
+  disabled,
   ...rest
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "ghost" | "danger" }) {
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: "primary" | "ghost" | "danger";
+  loading?: boolean;
+}) {
   const base =
     "inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition active:scale-[.98] disabled:opacity-50 disabled:active:scale-100 min-h-[44px]";
   const styles = {
@@ -36,7 +41,8 @@ export function Button({
     danger: `${base} bg-red-600 text-white hover:bg-red-700`,
   } as const;
   return (
-    <button className={`${styles[variant]} ${className}`} {...rest}>
+    <button className={`${styles[variant]} ${className}`} disabled={disabled || loading} {...rest}>
+      {loading && <Spinner />}
       {children}
     </button>
   );
@@ -57,13 +63,35 @@ export function Select({ className = "", children, ...props }: SelectHTMLAttribu
   );
 }
 
-export function Field({ label, children }: { label: string; children: ReactNode }) {
+export function Field({
+  label,
+  children,
+  hint,
+  error,
+  required = false,
+}: {
+  label: string;
+  children: ReactNode;
+  hint?: string;
+  error?: string;
+  required?: boolean;
+}) {
   return (
     <label className="block text-sm">
-      <span className="font-medium text-steel">{label}</span>
+      <span className="font-medium text-steel">
+        {label}
+        {required && <span className="ml-0.5 text-red-600">*</span>}
+      </span>
       <div className="mt-1">{children}</div>
+      {hint && !error && <p className="mt-1 text-xs text-steel">{hint}</p>}
+      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </label>
   );
+}
+
+/** A muted one-line reason shown under a disabled primary action. */
+export function Hint({ children }: { children: ReactNode }) {
+  return <p className="mt-2 text-xs text-steel">{children}</p>;
 }
 
 const BADGE = {

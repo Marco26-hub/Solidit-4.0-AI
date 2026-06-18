@@ -89,7 +89,7 @@ function MethodRow({ method, hasDoc }: { method: TestMethod; hasDoc: boolean }) 
         </div>
       </div>
       <div className="flex items-center gap-2">
-        {hasDoc ? <Badge kind="pass">norma caricata</Badge> : <Badge kind="muted">no norma</Badge>}
+        {hasDoc ? <Badge kind="pass">copia allegata</Badge> : <Badge kind="muted">da allegare</Badge>}
         {hasDoc && (
           <Button variant="ghost" disabled={download.isPending} onClick={() => download.mutate()}>
             {download.isPending ? "…" : "Scarica"}

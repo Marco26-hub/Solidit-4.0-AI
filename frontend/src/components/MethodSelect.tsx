@@ -2,6 +2,9 @@ import { useMemo } from "react";
 
 import type { TestMethod } from "@/api/types";
 
+const SELECT_BASE =
+  "w-full rounded-lg border border-slate-300 bg-white px-3 text-base outline-none transition focus:border-brand-500 min-h-[44px] sm:text-sm";
+
 /** Collapse the fine standard_family label into one of the top-level norm bodies. */
 export function normGroup(fam: string | null | undefined): string {
   const f = (fam ?? "").toUpperCase();
@@ -31,7 +34,7 @@ export function MethodSelect({
   methods,
   value,
   onChange,
-  className = "w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm min-h-[40px]",
+  className = SELECT_BASE,
   emptyLabel = "— scegli metodo —",
   allowEmpty = true,
 }: {

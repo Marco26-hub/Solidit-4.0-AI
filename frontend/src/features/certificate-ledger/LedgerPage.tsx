@@ -38,10 +38,24 @@ export function LedgerPage() {
     URL.revokeObjectURL(url);
   }
 
+  function onFinalize(id: string, number: string) {
+    if (
+      window.confirm(
+        `Finalizzare il report ${number}?\n\nUna volta finalizzato diventa la versione ufficiale e non potrà più essere modificato né rigenerato.`
+      )
+    )
+      finalize.mutate(id);
+  }
+
   return (
     <div className="space-y-4">
-      <PageHeader title="Certificate Ledger" subtitle="Report digitali con sigillo di integrità SHA-256" />
+      <PageHeader title="Registro report" subtitle="Report digitali con sigillo di integrità SHA-256" />
       <Card>
+        <p className="mb-3 text-xs text-steel">
+          <b>Verifica integrità</b> = ricontrolla che il PDF non sia stato alterato.{" "}
+          <b>Finalizza</b> = blocca il report in versione ufficiale (non più modificabile).{" "}
+          <b>Scarica PDF</b> = il documento da inviare.
+        </p>
         <ErrorText error={reports.error} />
         <div className="overflow-x-auto">
         <table className="w-full min-w-[480px] text-sm">
@@ -63,31 +77,33 @@ export function LedgerPage() {
                   <td className="font-mono text-xs text-steel">{r.sha256_hash.slice(0, 16)}…</td>
                   <td>
                     <Badge kind={r.status === "locked" ? "pass" : "muted"}>
-                      {r.status === "locked" ? "bloccato (ufficiale)" : r.status}
+                      {r.status === "locked" ? "Bloccato (ufficiale)" : "Bozza"}
                     </Badge>
                   </td>
                   <td>
                     {v ? (
                       <Badge kind={v.valid ? "pass" : "fail"}>{v.valid ? "valido" : "ALTERATO"}</Badge>
                     ) : (
-                      <Button variant="ghost" disabled={busy === r.id} onClick={() => verify(r.id)}>
-                        {busy === r.id ? "…" : "verifica"}
+                      <Button variant="ghost" loading={busy === r.id} onClick={() => verify(r.id)}>
+                        Verifica integrità
                       </Button>
                     )}
                   </td>
                   <td className="text-right">
-                    {r.status !== "locked" && (
-                      <Button
-                        variant="ghost"
-                        disabled={finalize.isPending}
-                        onClick={() => finalize.mutate(r.id)}
-                      >
-                        finalizza
+                    <div className="flex flex-wrap justify-end gap-2">
+                      {r.status !== "locked" && (
+                        <Button
+                          variant="ghost"
+                          loading={finalize.isPending}
+                          onClick={() => onFinalize(r.id, r.report_number)}
+                        >
+                          Finalizza
+                        </Button>
+                      )}
+                      <Button variant="ghost" onClick={() => download(r.id, r.report_number)}>
+                        Scarica PDF
                       </Button>
-                    )}
-                    <Button variant="ghost" onClick={() => download(r.id, r.report_number)}>
-                      PDF
-                    </Button>
+                    </div>
                   </td>
                 </tr>
               );

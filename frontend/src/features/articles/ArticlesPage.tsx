@@ -10,6 +10,7 @@ import {
   EmptyState,
   ErrorText,
   Field,
+  Hint,
   PageHeader,
   TextInput,
 } from "@/components/ui";
@@ -67,6 +68,13 @@ export function ArticlesPage() {
         subtitle="Campione di produzione (tintoria/stamperia). Ogni variante (colore/lotto) tiene il Lab di riferimento per la solidità del colore (colour-change)."
       />
 
+      <Card className="border-brand-200 bg-brand-50">
+        <p className="text-sm text-steel">
+          <b>Passo 1:</b> registra l'articolo e le sue varianti (con il Lab di riferimento). Poi crea
+          la striscia in <b>Batch Zero</b> e potrai avviare una <b>Prova</b>.
+        </p>
+      </Card>
+
       <Card>
         <div className="mb-2 font-medium">Articoli</div>
         <ErrorText error={articles.error} />
@@ -86,7 +94,7 @@ export function ArticlesPage() {
       <Card>
         <div className="mb-3 font-medium">Nuovo articolo</div>
         <div className="grid gap-3 sm:grid-cols-3">
-          <Field label="Codice articolo">
+          <Field label="Codice articolo" required>
             <TextInput value={code} onChange={(e) => setCode(e.target.value)} placeholder="ART-100" />
           </Field>
           <Field label="Nome">
@@ -131,9 +139,10 @@ export function ArticlesPage() {
         </div>
 
         <div className="mt-3">
-          <Button type="button" disabled={!code || create.isPending} onClick={() => create.mutate()}>
-            {create.isPending ? "…" : "Crea articolo"}
+          <Button type="button" loading={create.isPending} disabled={!code} onClick={() => create.mutate()}>
+            Crea articolo
           </Button>
+          {!code && <Hint>Inserisci il codice articolo per salvare.</Hint>}
         </div>
         <ErrorText error={create.error} />
       </Card>

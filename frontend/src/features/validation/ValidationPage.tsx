@@ -115,7 +115,9 @@ export function ValidationPage() {
                         {pass ? "pass indicativo" : "sotto soglia"}
                       </Badge>
                     ) : (
-                      <Badge kind="muted">{r.status}</Badge>
+                      <Badge kind="muted">
+                        {r.status === "created" ? "Da compilare" : r.status === "partial" ? "In corso" : r.status}
+                      </Badge>
                     )}
                     <span className="text-xs text-steel">{openId === r.id ? "chiudi" : "apri"}</span>
                   </div>

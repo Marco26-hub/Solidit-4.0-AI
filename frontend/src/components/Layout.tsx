@@ -19,12 +19,13 @@ const NAV: NavItem[] = [
   { to: "/devices", label: "Device", icon: "device" },
 ];
 
-// Mobile bottom bar shows the 4 most-used; the rest live behind "Altro".
+// Mobile bottom bar shows the 4 most-used, ordered to mirror the workflow
+// (input → test → output); the rest live behind "Altro".
 const PRIMARY: NavItem[] = [
   { to: "/", label: "Dashboard", icon: "dashboard", end: true },
+  { to: "/articles", label: "Articoli", icon: "layers" },
   { to: "/test-jobs", label: "Prove", icon: "clipboard" },
   { to: "/ledger", label: "Report", icon: "doc" },
-  { to: "/articles", label: "Articoli", icon: "layers" },
 ];
 const PRIMARY_PATHS = new Set(PRIMARY.map((n) => n.to));
 const SECONDARY: NavItem[] = [
@@ -110,7 +111,7 @@ export function Layout() {
           <div className="absolute inset-0 bg-black/40" onClick={() => setMoreOpen(false)} />
           <div className="absolute inset-x-0 bottom-0 rounded-t-2xl border-t border-slate-200 bg-white p-4 pb-safe shadow-2xl">
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-slate-300" />
-            <div className="mb-3 text-sm font-semibold text-ink">Altro</div>
+            <div className="mb-3 text-sm font-semibold text-ink">Altro — impostazioni e anagrafiche</div>
             <div className="grid grid-cols-3 gap-2">
               {SECONDARY.map((n) => (
                 <NavLink
