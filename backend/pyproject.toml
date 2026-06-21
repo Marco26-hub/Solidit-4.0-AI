@@ -28,12 +28,12 @@ dev = [
     "ruff>=0.5",
 ]
 # Vision engine deps (lazy-imported in app.vision; base app installs without them).
-# opencv (geometry/markers) added in a later hardening step.
 vision = [
     "numpy>=1.26",
     "scikit-image>=0.23",
     "scipy>=1.11",
     "Pillow>=10.2",
+    "opencv-python-headless>=4.9",  # ArUco markers + homography (geometry.py/markers.py)
 ]
 # Production object storage (S3 / R2 / MinIO / B2). Lazy-imported in storage.py.
 storage = [

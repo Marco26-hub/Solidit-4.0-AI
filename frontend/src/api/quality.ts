@@ -76,6 +76,7 @@ export const createCaptureSession = (body: {
   white_tile_ref_id?: string | null;
   colour_target_ref_id?: string | null;
   has_inframe_grey_scale?: boolean;
+  aruco_rectify?: boolean;
   strict_quality?: boolean;
 }) =>
   apiFetch<CaptureSessionLite>("/api/v1/capture-sessions", {

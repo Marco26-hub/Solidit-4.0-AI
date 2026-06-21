@@ -94,6 +94,7 @@ async def create_session(
         colour_target_ref_id=data.colour_target_ref_id,
         telemetry={
             "inframe_grey_scale": data.has_inframe_grey_scale,
+            "aruco_rectify": data.aruco_rectify,
             "strict_quality": data.strict_quality,
         },
     )
@@ -340,6 +341,7 @@ async def _analyze_staining(
     from app.vision.pipeline import analyze_multifiber
 
     grey = bool((cs.telemetry or {}).get("inframe_grey_scale"))
+    geometry_markers = bool((cs.telemetry or {}).get("aruco_rectify"))
     white_lab = await _certified_white_lab(session, company_id, cs) if grey else None
     # newest image is the primary result; the rest provide repeatability
     replicate_visions = [
@@ -350,6 +352,7 @@ async def _analyze_staining(
             thresholds=thresholds,
             grey_scale=grey,
             white_reference_lab=white_lab,
+            geometry_markers=geometry_markers,
         )
         for im in imgs
     ]

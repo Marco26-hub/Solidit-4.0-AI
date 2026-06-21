@@ -97,6 +97,7 @@ async def generate_report(
         "references": res.get("references", {}),
         "grading_profile": qflags.get("grading_profile"),
         "colour_correction": qflags.get("colour_correction"),
+        "geometry": (qflags.get("geometry") or {}).get("method"),
         "grey_scale_detected": (qflags.get("grey_scale") or {}).get("detected"),
         "fiber_order": qflags.get("fiber_order"),
         "capture_acceptable": (qflags.get("capture") or {}).get("acceptable"),

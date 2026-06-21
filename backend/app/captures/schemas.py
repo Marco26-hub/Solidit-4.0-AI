@@ -20,6 +20,8 @@ class CaptureSessionCreate(BaseModel):
     colour_target_ref_id: uuid.UUID | None = None
     # the photo includes an in-frame neutral/grey reference (ISO 105-A11 correction)
     has_inframe_grey_scale: bool = False
+    # the photo includes the dima's four ArUco fiducials -> homography rectification
+    aruco_rectify: bool = False
     # accreditation mode: REJECT (block) the analysis when capture quality is poor
     strict_quality: bool = False
 

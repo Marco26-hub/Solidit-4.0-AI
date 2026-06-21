@@ -148,7 +148,8 @@ def build_report_pdf(payload: dict[str, Any], sha256_hash: str, verify_url: str)
     story += [Spacer(1, 10), Paragraph("Provenienza & avvertenze", styles["Heading2"])]
     story.append(
         Paragraph(
-            f"Sorgente: {prov.get('source', '-')} · correzione colore: "
+            f"Sorgente: {prov.get('source', '-')} · geometria: "
+            f"{prov.get('geometry', '-')} · correzione colore: "
             f"{prov.get('colour_correction', '-')} · profilo grading: "
             f"{prov.get('grading_profile', '-')}",
             small,

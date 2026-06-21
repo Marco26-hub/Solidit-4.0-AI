@@ -33,13 +33,18 @@ def analyze_multifiber(
     thresholds: list[dict] | None = None,
     grey_scale: bool = False,
     white_reference_lab: list[float] | None = None,
+    geometry_markers: bool = False,
 ) -> dict[str, Any]:
     """fibers: ordered fibre codes (from the strip profile).
     reference_lab: {fiber: {"L":..,"a":..,"b":..}} — the unstained reference.
     grey_scale: when True, look for an in-frame neutral reference and white-balance
     the image with it (ISO 105-A11 in-frame colour correction).
     white_reference_lab: certified CIELAB of the in-frame white tile — when given,
-    the correction anchors to it (traceable) instead of self-neutralising."""
+    the correction anchors to it (traceable) instead of self-neutralising.
+    geometry_markers: when True, look for the dima's four ArUco fiducials and
+    rectify the frame via homography BEFORE colour correction (geometry stays
+    separate from colour). Falls back to auto-strip-detection (flagged) if the
+    markers are absent."""
     import numpy as np
     from PIL import Image
 
@@ -48,6 +53,31 @@ def analyze_multifiber(
     arr: Any = np.asarray(image)
     pipeline_warnings: list[str] = []
     grey_flags: dict[str, Any] = {"requested": grey_scale, "detected": False}
+
+    # GEOMETRY first (separate from colour): rectify via ArUco homography if asked.
+    geometry_flags: dict[str, Any] = {
+        "requested": geometry_markers,
+        "method": "auto-strip-detection",
+        "rectified": False,
+    }
+    if geometry_markers:
+        from app.vision.geometry import rectify_perspective
+        from app.vision.markers import detect_markers
+
+        markers = detect_markers(arr)
+        geometry_flags["markers_found"] = markers["found"]
+        rect = rectify_perspective(arr, markers)
+        if rect["applied"]:
+            arr = rect["image"]
+            geometry_flags.update(
+                method="homography_aruco", rectified=True, src_points=rect["src_points"]
+            )
+        else:
+            geometry_flags["fallback_reason"] = rect["reason"]
+            pipeline_warnings.append(
+                "geometry: marker ArUco richiesti ma rettifica NON applicata "
+                f"({rect['reason']}) — uso auto-rilevamento striscia (non validato)"
+            )
 
     # precedence: explicit device matrix > in-frame grey-scale > none
     if color_matrix is not None:
@@ -118,6 +148,7 @@ def analyze_multifiber(
         "quality_flags": {
             "bands": len(fibers),
             "source": "auto-strip-detection",
+            "geometry": geometry_flags,
             "orientation": seg["orientation"],
             "boundary_method": seg["boundary_method"],
             "bbox": seg["bbox"],

@@ -313,11 +313,13 @@ function JobPanel({
   const [lightboxRef, setLightboxRef] = useState("");
   const [greyRef, setGreyRef] = useState("");
   const [inframeGrey, setInframeGrey] = useState(false);
+  const [arucoRectify, setArucoRectify] = useState(false);
   const [strict, setStrict] = useState(false);
   const refIds = () => ({
     lightbox_ref_id: lightboxRef || null,
     grey_scale_ref_id: greyRef || null,
     has_inframe_grey_scale: inframeGrey,
+    aruco_rectify: arucoRectify,
     strict_quality: strict,
   });
   const usableRefs = (kind: string) =>
@@ -536,6 +538,14 @@ function JobPanel({
               onChange={(e) => setInframeGrey(e.target.checked)}
             />
             La foto include una scala grigi/piastrina per la correzione colore (ISO 105-A11)
+          </label>
+          <label className="flex items-center gap-2 text-sm text-steel">
+            <input
+              type="checkbox"
+              checked={arucoRectify}
+              onChange={(e) => setArucoRectify(e.target.checked)}
+            />
+            La dima ha i 4 marker ArUco: raddrizza la prospettiva (omografia)
           </label>
           <label className="flex items-center gap-2 text-sm text-steel">
             <input type="checkbox" checked={strict} onChange={(e) => setStrict(e.target.checked)} />
