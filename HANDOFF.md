@@ -184,6 +184,14 @@ Neon API key · [ ] aggiornate env su Render · [ ] verificato login+analyze liv
 5. iPhone = quality gate di cattura, non metrologia da solo: serve kit.
 6. Fallback espliciti: ogni default non validato (soglie ESEMPIO, nessuna
    correzione colore, ordine fibre fallback) è flaggato nel risultato e nel PDF.
+7. **Niente curva di riflettanza "vera" da RGB.** RGB = 3 numeri; uno spettro =
+   ~31 valori → inversione sotto-determinata (metamerismo): impossibile recuperare
+   uno spettro unico/"perfetto" da una foto. Una eventuale **stima spettrale**
+   (futuro, R&D) va addestrata su dataset spettrofotometro, dichiarata "STIMATA"
+   con confidenza+disclaimer, **separata** dal report ufficiale e **mai** base di
+   misura accreditata. L'accreditamento si regge sul **confronto del grado/ΔE
+   finale** vs metodo di riferimento (modulo `/validation` + PT), NON su spettri
+   ricostruiti.
 
 ## Pipeline tecnica (implementata)
 
