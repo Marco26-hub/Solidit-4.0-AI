@@ -54,6 +54,13 @@ class Settings(BaseSettings):
     # Local filesystem object-storage dir (dev fallback when S3 is not configured)
     storage_local_dir: str = "storage"
 
+    # Spectral estimation (R&D). 'smoothest' = deterministic metamer (no GPU).
+    # 'remote_ml' = learned model served over HTTP (e.g. NVIDIA DGX Spark) at
+    # spectral_inference_url; falls back to 'smoothest' when the URL is unset.
+    # NOTE: spectral curves are STIMATA, never a measurement (project rule 7).
+    spectral_backend: str = "smoothest"
+    spectral_inference_url: str | None = None
+
     # Billing (Stripe). Optional — checkout/webhook inactive until configured.
     stripe_secret_key: str | None = None
     stripe_webhook_secret: str | None = None

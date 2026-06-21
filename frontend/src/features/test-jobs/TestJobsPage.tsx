@@ -17,6 +17,8 @@ import {
   submitManualResult,
   uploadCaptureImage,
 } from "@/api/quality";
+import { estimateForResult } from "@/api/spectral";
+import { SpectralCurveViewer } from "@/features/spectral/SpectralCurveViewer";
 import { MethodSelect } from "@/components/MethodSelect";
 import { PhotoInput } from "@/components/PhotoInput";
 import { fibersForMethod } from "@/lib/fibers";
@@ -680,10 +682,55 @@ function JobPanel({
                 <b>{r.vision.gray_scale_grade}</b>
               </div>
             )}
+            <SpectralResultPanel resultId={res.id} />
           </div>
         );
       })}
       {results.data?.length === 0 && <p className="text-steel">Nessun risultato.</p>}
     </Card>
+  );
+}
+
+// Per-result reflectance ESTIMATE (R&D). It is NOT a measurement and is
+// excluded from the sealed report (project rule 7) — surfaced on demand only.
+function SpectralResultPanel({ resultId }: { resultId: string }) {
+  const [open, setOpen] = useState(false);
+  const estimate = useMutation({
+    mutationFn: () => estimateForResult(resultId),
+  });
+
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    if (next && !estimate.data && !estimate.isPending) estimate.mutate();
+  };
+
+  const data = estimate.data;
+
+  return (
+    <div className="mt-2 border-t pt-2">
+      <Button variant="ghost" loading={estimate.isPending && open} onClick={toggle}>
+        {open ? "Nascondi curva riflettanza" : "Curva riflettanza STIMATA (R&D)"}
+      </Button>
+      {open && (
+        <div className="mt-2 space-y-3">
+          <ErrorText error={estimate.error} />
+          {data && (
+            <>
+              <div className="rounded-lg border border-amber-300 bg-amber-50 p-2 text-[11px] leading-relaxed text-amber-800">
+                <b>{data.label}</b> — {data.disclaimer}
+                {data.note ? <span> {data.note}</span> : null}
+              </div>
+              {data.fibers.length === 0 && (
+                <p className="text-xs text-steel">Nessuna fibra con Lab disponibile per la stima.</p>
+              )}
+              {data.fibers.map((f) => (
+                <SpectralCurveViewer key={f.fiber} estimate={f.estimate} title={f.fiber} />
+              ))}
+            </>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

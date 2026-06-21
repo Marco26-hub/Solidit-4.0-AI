@@ -14,6 +14,7 @@ import { LedgerPage } from "@/features/certificate-ledger/LedgerPage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { DevicesPage } from "@/features/devices/DevicesPage";
 import { MethodsPage } from "@/features/methods/MethodsPage";
+import { SpectralLabPage } from "@/features/spectral/SpectralLabPage";
 import { ValidationPage } from "@/features/validation/ValidationPage";
 import { VerifyPage } from "@/features/verify/VerifyPage";
 import { LoginPage } from "@/features/auth/LoginPage";
@@ -38,6 +39,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                 <Route path="/test-jobs" element={<TestJobsPage />} />
                 <Route path="/methods" element={<MethodsPage />} />
                 <Route path="/validation" element={<ValidationPage />} />
+                <Route path="/spectral" element={<SpectralLabPage />} />
                 <Route path="/billing" element={<BillingPage />} />
                 <Route path="/ledger" element={<LedgerPage />} />
                 <Route path="/devices" element={<DevicesPage />} />

@@ -26,6 +26,7 @@ from app.devices.router import router as devices_router
 from app.proficiency.router import router as proficiency_router
 from app.reports.public_router import router as public_reports_router
 from app.reports.router import router as reports_router
+from app.spectral.router import router as spectral_router
 from app.test_jobs.router import router as test_jobs_router
 from app.test_methods.router import router as test_methods_router
 from app.validation.router import router as validation_router
@@ -83,6 +84,7 @@ app.include_router(calibration_router)
 app.include_router(validation_router)
 app.include_router(proficiency_router)
 app.include_router(accreditation_router)
+app.include_router(spectral_router)
 
 
 @app.get("/healthz", tags=["meta"])

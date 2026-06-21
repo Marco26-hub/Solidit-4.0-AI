@@ -38,6 +38,25 @@ Monorepo attivo: `backend/` (FastAPI, Python 3.12) · `frontend/` (React+Vite+TS
   logica ISO 105-A11), colour-change vs Lab variante, **ripetibilità** su
   repliche (scarto max gradi), **strict mode** (rifiuto hard cattura scarsa),
   quality gate (blur/esposizione/fill) + confidence per banda.
+- **Geometria ArUco + omografia** (`vision/markers.py`+`geometry.py`,
+  vision-core-0.3.0): se la dima espone i 4 marker ArUco (id 0/1/2/3 =
+  TL/TR/BR/BL) la cattura viene **raddrizzata via omografia PRIMA** della
+  correzione colore (geometria↔colore separate, regola 8); marker assenti →
+  fallback auto-rilevamento striscia **flaggato** (regola 6). Toggle
+  `aruco_rectify` per cattura; metodo geometria in provenienza PDF. Opt-in
+  `opencv-python-headless` nell'extra `[vision]`.
+- **Stima spettrale (R&D, regola 7)** `app/spectral/` + `vision/spectral.py`:
+  curva di riflettanza **STIMATA** dal Lab misurato col **metamero più liscio**
+  (QP vincolata: min curvatura s.t. il colore è riprodotto; CMF CIE 1931 2° +
+  D65 pubblici, niente ISO proprietario). SEMPRE flaggata STIMATA + disclaimer,
+  **mai** misura/spettrofotometro, **mai** dentro il report sigillato (test che
+  lo verifica). Endpoint `POST /spectral/estimate`, `POST /spectral/render-under`
+  (anteprima sotto altro illuminante D65/A = check metamerismo), `GET
+  /spectral/measurement-results/{id}` (per-fibra). Backend **pluggable**:
+  `smoothest` (ora) | `remote_ml` (HTTP verso NVIDIA DGX Spark, env
+  `SPECTRAL_INFERENCE_URL`, fallback a smoothest se assente). Pagina frontend
+  "Spettro (R&D)" + bottone per-risultato nelle Prove. Confidenza = euristica
+  NON validata; accuratezza reale richiede dataset spettrofotometro.
 - **Tarature/strumenti** (ISO 17025): registro `calibration_references`
   (scala grigia/piastrina/target/lightbox + certificato + scadenza) —
   **analisi BLOCCATA se riferimento scaduto/dismesso**; provenienza strumenti
