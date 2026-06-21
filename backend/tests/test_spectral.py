@@ -67,6 +67,31 @@ def test_render_under_illuminant_a_shifts_colour():
     assert all(0 <= c <= 255 for c in under_a["srgb"])
 
 
+def test_metamerism_differing_samples_under_test_light():
+    from app.vision.spectral import metamerism_pair
+
+    m = metamerism_pair([45, 60, 35], [45, 55, 48])
+    assert m["label"] == "STIMATA"
+    assert m["not_a_measurement"] is True
+    assert m["delta_e_reference"] > 1.0
+    assert len(m["per_illuminant"]) == 1
+    row = m["per_illuminant"][0]
+    assert row["illuminant"] == "A"
+    assert "metamerism_index" in row and row["metamerism_index"] >= 0.0
+    assert m["warnings"] == []  # they differ under D65 → no "collapse" caveat
+
+
+def test_metamerism_matched_samples_flag_limitation():
+    # rule 7: samples matching under the reference illuminant collapse to the same
+    # ESTIMATED spectrum → MI≈0 and the hard limitation must be flagged loudly.
+    from app.vision.spectral import metamerism_pair
+
+    m = metamerism_pair([50, 20, 10], [50, 20, 10])
+    assert m["delta_e_reference"] == pytest.approx(0.0, abs=1e-6)
+    assert m["per_illuminant"][0]["metamerism_index"] == pytest.approx(0.0, abs=1e-6)
+    assert any("metamerismo reale" in w for w in m["warnings"])
+
+
 def test_unsupported_illuminant_rejected():
     from app.common.errors import AppError
     from app.spectral.service import estimate_lab
@@ -165,6 +190,24 @@ async def test_estimate_endpoint_returns_stimata(client, require_db):
     assert body["not_a_measurement"] is True
     assert len(body["reflectance"]) == 31
     assert body["illuminant"] == "D65"
+
+
+async def test_metamerism_endpoint(client, require_db):
+    reg = await _register(client, f"mt-{uuid.uuid4().hex[:8]}@example.com", "Metam Co")
+    h = {"Authorization": f"Bearer {reg['access_token']}"}
+    r = await client.post(
+        "/api/v1/spectral/metamerism",
+        json={
+            "lab_reference": {"L": 45, "a": 60, "b": 35},
+            "lab_sample": {"L": 45, "a": 55, "b": 48},
+        },
+        headers=h,
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["label"] == "STIMATA"
+    assert body["not_a_measurement"] is True
+    assert body["per_illuminant"][0]["illuminant"] == "A"
 
 
 async def test_spectral_estimate_not_written_into_report_payload(client, require_db):

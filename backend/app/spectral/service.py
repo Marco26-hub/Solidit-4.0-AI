@@ -28,6 +28,7 @@ from app.vision.spectral import (
     ESTIMATE_LABEL,
     SUPPORTED_ILLUMINANTS,
     estimate_reflectance,
+    metamerism_pair,
 )
 
 
@@ -118,6 +119,26 @@ def estimate_lab(
     if fallback:
         out.setdefault("warnings", []).append(f"backend: {fallback} → uso metamero liscio")
     return out
+
+
+def metamerism(
+    lab_reference: list[float],
+    lab_sample: list[float],
+    *,
+    reference_illuminant: str = "D65",
+    observer: str = "2",
+) -> dict[str, Any]:
+    if reference_illuminant.upper() not in SUPPORTED_ILLUMINANTS:
+        raise AppError(
+            f"Illuminante non supportato: {reference_illuminant}.",
+            code="unsupported_illuminant",
+        )
+    return metamerism_pair(
+        lab_reference,
+        lab_sample,
+        reference_illuminant=reference_illuminant.upper(),
+        observer=observer,
+    )
 
 
 _NOTE = (

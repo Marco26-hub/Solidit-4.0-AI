@@ -59,6 +59,34 @@ class RenderResult(BaseModel):
     disclaimer: str
 
 
+class MetamerismRequest(BaseModel):
+    lab_reference: LabInput
+    lab_sample: LabInput
+    reference_illuminant: Illuminant = "D65"
+    observer: Observer = "2"
+
+
+class IlluminantDiff(BaseModel):
+    illuminant: str
+    delta_e: float
+    metamerism_index: float
+    lab_reference: list[float]
+    lab_sample: list[float]
+
+
+class MetamerismResult(BaseModel):
+    estimate: bool = True
+    not_a_measurement: bool = True
+    label: str
+    method: str
+    reference_illuminant: str
+    observer: str
+    delta_e_reference: float
+    per_illuminant: list[IlluminantDiff]
+    warnings: list[str]
+    disclaimer: str
+
+
 class FiberEstimate(BaseModel):
     fiber: str
     sample_lab: list[float]

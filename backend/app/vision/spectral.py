@@ -280,6 +280,90 @@ def render_under_illuminant(
     }
 
 
+# Test illuminants available for the metamerism comparison. D65 is the reference
+# (daylight); A is warm incandescent/halogen (retail spots). F11/TL84 (shop
+# fluorescent) is intentionally NOT here yet — we won't embed an unvalidated
+# triband SPD (rule 5/6); it follows once a validated table is added.
+METAMERISM_TEST_ILLUMINANTS = ("A",)
+
+
+def metamerism_pair(
+    lab_reference: list[float],
+    lab_sample: list[float],
+    *,
+    reference_illuminant: str = "D65",
+    test_illuminants: tuple[str, ...] = METAMERISM_TEST_ILLUMINANTS,
+    observer: str = "2",
+) -> dict[str, Any]:
+    """Estimate the illuminant-dependent colour difference between two samples
+    (reference vs sample) from their CIELAB under the reference illuminant.
+
+    ⚠️ HARD LIMITATION (rule 7): both spectra are STIMATE from Lab. If the two
+    samples match under the reference illuminant their estimated spectra are
+    ~identical by construction, so this method reports MI≈0 — it CANNOT reveal
+    real metamerism between samples that match under the reference light. That
+    needs MEASURED spectra. It is meaningful for samples that already differ
+    under the reference light (how their difference grows/shrinks under another
+    light), and as an indicative/visual tool only.
+
+    For each test illuminant we report ΔE (CIEDE2000) and a special metamerism
+    index = ΔE under the test light AFTER additively removing the residual
+    reference-light mismatch (so a pair matched under the reference reduces to
+    the pure test-light divergence, ISO 105-J03 spirit)."""
+    est_ref = estimate_reflectance(
+        lab_reference, illuminant=reference_illuminant, observer=observer
+    )
+    est_smp = estimate_reflectance(lab_sample, illuminant=reference_illuminant, observer=observer)
+    r_ref = est_ref["reflectance"]
+    r_smp = est_smp["reflectance"]
+
+    ref_under_ref = render_under_illuminant(r_ref, reference_illuminant, observer=observer)["lab"]
+    smp_under_ref = render_under_illuminant(r_smp, reference_illuminant, observer=observer)["lab"]
+    delta_e_reference = round(compute_delta_e_ciede2000(ref_under_ref, smp_under_ref), 3)
+    # additive correction that forces a perfect match under the reference light
+    correction = [smp_under_ref[i] - ref_under_ref[i] for i in range(3)]
+
+    per_illuminant: list[dict[str, Any]] = []
+    for ill in test_illuminants:
+        if ill == reference_illuminant:
+            continue
+        ref_lab = render_under_illuminant(r_ref, ill, observer=observer)["lab"]
+        smp_lab = render_under_illuminant(r_smp, ill, observer=observer)["lab"]
+        delta_e = round(compute_delta_e_ciede2000(ref_lab, smp_lab), 3)
+        corrected_smp = [smp_lab[i] - correction[i] for i in range(3)]
+        mi = round(compute_delta_e_ciede2000(ref_lab, corrected_smp), 3)
+        per_illuminant.append(
+            {
+                "illuminant": ill.upper(),
+                "delta_e": delta_e,
+                "metamerism_index": mi,
+                "lab_reference": ref_lab,
+                "lab_sample": smp_lab,
+            }
+        )
+
+    warnings: list[str] = []
+    if delta_e_reference < 0.5:
+        warnings.append(
+            "i campioni combaciano sotto l'illuminante di riferimento: da Lab le "
+            "curve STIMATE risultano ~identiche → questo metodo NON può rivelare "
+            "metamerismo reale (servono spettri MISURATI)."
+        )
+
+    return {
+        "estimate": True,
+        "not_a_measurement": True,
+        "label": ESTIMATE_LABEL,
+        "method": "metamerism_index_estimated_v1",
+        "reference_illuminant": reference_illuminant.upper(),
+        "observer": observer,
+        "delta_e_reference": delta_e_reference,
+        "per_illuminant": per_illuminant,
+        "warnings": warnings,
+        "disclaimer": DISCLAIMER,
+    }
+
+
 def _xyz_to_srgb(xyz: Any, white: list[float]) -> list[int]:
     """XYZ (Y up to 100) -> 8-bit sRGB for a preview swatch (display only)."""
     import numpy as np

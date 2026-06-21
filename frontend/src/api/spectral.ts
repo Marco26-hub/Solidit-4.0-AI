@@ -46,6 +46,29 @@ export interface RenderUnderResult {
   disclaimer: string;
 }
 
+/** Per-illuminant colour difference inside a metamerism comparison. */
+export interface IlluminantDiff {
+  illuminant: string;
+  delta_e: number;
+  metamerism_index: number;
+  lab_reference: number[];
+  lab_sample: number[];
+}
+
+/** Result of POST /spectral/metamerism — ESTIMATED, indicative only. */
+export interface MetamerismResult {
+  estimate: boolean;
+  not_a_measurement: boolean;
+  label: string;
+  method: string;
+  reference_illuminant: string;
+  observer: string;
+  delta_e_reference: number;
+  per_illuminant: IlluminantDiff[];
+  warnings: string[];
+  disclaimer: string;
+}
+
 /** One fiber's estimate inside a measurement-result expansion. */
 export interface FiberEstimate {
   fiber: string;
@@ -80,6 +103,17 @@ export const renderUnder = (body: {
   observer?: string;
 }) =>
   apiFetch<RenderUnderResult>("/api/v1/spectral/render-under", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+
+export const metamerism = (body: {
+  lab_reference: LabInput;
+  lab_sample: LabInput;
+  reference_illuminant?: Illuminant;
+  observer?: string;
+}) =>
+  apiFetch<MetamerismResult>("/api/v1/spectral/metamerism", {
     method: "POST",
     body: JSON.stringify(body),
   });

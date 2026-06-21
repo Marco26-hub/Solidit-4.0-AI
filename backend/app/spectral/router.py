@@ -14,6 +14,8 @@ from app.spectral import service
 from app.spectral.schemas import (
     EstimateRequest,
     Illuminant,
+    MetamerismRequest,
+    MetamerismResult,
     ReflectanceEstimate,
     RenderRequest,
     RenderResult,
@@ -47,6 +49,21 @@ async def render_under(
 ) -> RenderResult:
     out = render_under_illuminant(body.reflectance, body.illuminant, observer=body.observer)
     return RenderResult.model_validate(out)
+
+
+@router.post("/metamerism", response_model=MetamerismResult)
+async def metamerism(
+    body: MetamerismRequest,
+    principal: Principal = Depends(get_tenant_principal),
+) -> MetamerismResult:
+    out = await run_in_threadpool(
+        service.metamerism,
+        [body.lab_reference.L, body.lab_reference.a, body.lab_reference.b],
+        [body.lab_sample.L, body.lab_sample.a, body.lab_sample.b],
+        reference_illuminant=body.reference_illuminant,
+        observer=body.observer,
+    )
+    return MetamerismResult.model_validate(out)
 
 
 @router.get("/measurement-results/{result_id}", response_model=ResultSpectralOut)

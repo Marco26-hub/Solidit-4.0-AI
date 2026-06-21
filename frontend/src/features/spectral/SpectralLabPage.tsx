@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 
 import { estimateReflectance, ILLUMINANTS, type Illuminant } from "@/api/spectral";
+import { MetamerismPanel } from "./MetamerismPanel";
 import { SpectralCurveViewer } from "./SpectralCurveViewer";
 import { Button, Card, ErrorText, Field, PageHeader, Select, TextInput } from "@/components/ui";
 
@@ -108,6 +109,8 @@ export function SpectralLabPage() {
       </Card>
 
       {estimate.data && <SpectralCurveViewer estimate={estimate.data} />}
+
+      <MetamerismPanel />
     </div>
   );
 }
