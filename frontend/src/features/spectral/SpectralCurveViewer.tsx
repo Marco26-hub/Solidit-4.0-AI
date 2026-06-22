@@ -253,6 +253,7 @@ export function SpectralCurveViewer({
         <div className="flex flex-wrap items-center gap-2">
           {title && <span className="font-medium text-ink">{title}</span>}
           <Badge kind="warn">STIMATA · R&D</Badge>
+          {estimate.in_gamut === false && <Badge kind="warn">fuori gamut</Badge>}
         </div>
         <span className="text-xs text-steel">
           {estimate.illuminant} · {estimate.observer}

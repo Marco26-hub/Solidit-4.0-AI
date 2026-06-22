@@ -37,11 +37,38 @@ def test_estimate_returns_valid_reflectance():
 
 
 def test_estimate_is_colour_faithful_roundtrip():
-    # smoothest metamer reproduces the measured colour (small round-trip ΔE)
+    # LHTSS reproduces the measured colour essentially exactly (round-trip ΔE ≈ 0)
     for lab in ([60, 0, 0], [50, 40, 30], [30, 10, -25], [70, -30, 20]):
         est = estimate_reflectance(lab)
-        assert est["roundtrip_delta_e"] < 1.0
-        assert est["confidence"] > 0.7
+        assert est["roundtrip_delta_e"] < 0.2
+        assert est["confidence"] > 0.9
+
+
+def test_lhtss_reflectance_strictly_in_open_unit_interval():
+    # ρ = (tanh z + 1)/2 ∈ (0,1) for all z — bounds are built in, never clipped
+    est = estimate_reflectance([45, 60, 35])
+    assert all(0.0 < v < 1.0 for v in est["reflectance"])
+
+
+def test_rgb_to_reflectance_saturated_red_is_exact():
+    # the old clip method distorted saturated reds (ΔE ~3.8); LHTSS reproduces it
+    from app.vision.spectral import reflectance_from_rgb
+
+    est = reflectance_from_rgb([200, 30, 40])
+    assert est["engine"] == "lhtss"
+    assert est["in_gamut"] is True
+    assert est["roundtrip_delta_e"] < 0.5
+    assert est["input_rgb"] == [200, 30, 40]
+    assert len(est["reflectance"]) == 31
+
+
+def test_rgb_white_maps_to_canonical_d65_white():
+    from app.vision.spectral import _srgb_to_xyz
+
+    xyz = _srgb_to_xyz([255, 255, 255])
+    assert float(xyz[0]) == pytest.approx(95.047, abs=0.05)
+    assert float(xyz[1]) == pytest.approx(100.0, abs=0.05)
+    assert float(xyz[2]) == pytest.approx(108.883, abs=0.05)
 
 
 def test_estimate_is_deterministic():
@@ -190,6 +217,24 @@ async def test_estimate_endpoint_returns_stimata(client, require_db):
     assert body["not_a_measurement"] is True
     assert len(body["reflectance"]) == 31
     assert body["illuminant"] == "D65"
+
+
+async def test_estimate_rgb_endpoint(client, require_db):
+    reg = await _register(client, f"rgb-{uuid.uuid4().hex[:8]}@example.com", "Rgb Co")
+    h = {"Authorization": f"Bearer {reg['access_token']}"}
+    r = await client.post(
+        "/api/v1/spectral/estimate-rgb",
+        json={"rgb": {"r": 200, "g": 30, "b": 40}},
+        headers=h,
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["label"] == "STIMATA"
+    assert body["engine"] == "lhtss"
+    assert body["illuminant"] == "D65"
+    assert body["in_gamut"] is True
+    assert len(body["reflectance"]) == 31
+    assert body["input_rgb"] == [200, 30, 40]
 
 
 async def test_metamerism_endpoint(client, require_db):

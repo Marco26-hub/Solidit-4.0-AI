@@ -26,9 +26,12 @@ export interface ReflectanceEstimate {
   engine: string;
   illuminant: string;
   observer: string;
+  in_gamut?: boolean | null;
+  iterations?: number | null;
   wavelengths_nm: number[]; // length 31 (400..700 nm)
   reflectance: number[]; // length 31, each 0..1
   input_lab: number[]; // [L, a, b]
+  input_rgb?: number[] | null; // [r, g, b] when estimated from RGB
   roundtrip_lab: number[]; // [L, a, b]
   roundtrip_delta_e: number;
   confidence: number; // 0..1
@@ -93,6 +96,15 @@ export const estimateReflectance = (body: {
   observer?: string;
 }) =>
   apiFetch<ReflectanceEstimate>("/api/v1/spectral/estimate", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+
+export const estimateFromRgb = (body: {
+  rgb: { r: number; g: number; b: number };
+  observer?: string;
+}) =>
+  apiFetch<ReflectanceEstimate>("/api/v1/spectral/estimate-rgb", {
     method: "POST",
     body: JSON.stringify(body),
   });

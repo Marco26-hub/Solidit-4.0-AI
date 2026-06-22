@@ -4,25 +4,34 @@
 A reflectance curve recovered from an RGB/Lab colour is NOT a measurement and
 NOT the "true" spectrum. RGB carries 3 numbers; a reflectance spectrum has ~31.
 The inverse is under-determined — infinitely many spectra (metamers) produce the
-SAME colour. This module returns ONE plausible spectrum, the SMOOTHEST metamer
+SAME colour. This module returns ONE plausible spectrum (a smooth metamer)
 consistent with the measured colour under a known illuminant/observer. It is:
   - always labelled "STIMATA" (estimated),
   - never a basis for an accredited measurement,
   - kept OUT of the sealed Digital Quality Report.
-The smoothest-metamer choice is a deterministic, explainable prior (textile dyes
-are usually smooth); it cannot see sharp absorption peaks, fluorescence, nor
-detect sample/reference metamerism when the two colours match.
+The smooth-metamer choice is a deterministic, explainable prior (textile dyes are
+usually smooth); it cannot see sharp absorption peaks, fluorescence, nor detect
+sample/reference metamerism when the two colours match.
 
-Method: among all reflectances r (0..1, 31 bands at 10 nm, 400–700 nm) that
-reproduce the measured tristimulus X,Y,Z, pick the one minimising curvature
-‖D r‖² (D = 2nd-difference operator) — an equality-constrained quadratic program
-with a small ridge for invertibility, then clip to [0,1]. Colour fidelity after
-clipping is reported as a round-trip ΔE (CIEDE2000) and folded into a heuristic
-(NON-validated) confidence.
+Method — LHTSS (Least Hyperbolic Tangent Slope Squared, Scott Burns): the
+reflectance is reparametrised ρ = (tanh z + 1)/2 so ρ ∈ (0,1) for ALL z (the
+bounds are built in — no clipping). We minimise the squared slope of z subject to
+the exact colour constraint T·ρ = XYZ, solving the Lagrangian KKT system by
+damped Newton. When the colour lies inside the object-colour solid this
+reproduces it EXACTLY (round-trip ΔE ≈ 0, even for saturated colours that the old
+unconstrained-then-clip method distorted); when it is out of gamut Newton stalls
+and the result is flagged (in_gamut=False, lower confidence). Confidence is the
+colour round-trip fidelity (ΔE CIEDE2000) — a heuristic, NON-validated number;
+it does NOT claim spectral accuracy (no true spectrum exists to validate against).
+
+Entry points: estimate_reflectance(lab) · reflectance_from_xyz(xyz) ·
+reflectance_from_rgb(rgb) — the last goes sRGB→linear→XYZ (D65) directly, the
+right model for an iPhone pixel.
 
 CIE data embedded here (1931 2° colour-matching functions + D65 SPD, 10 nm) are
-public CIE reference tables, not proprietary ISO/AATCC content (rule 5). A
-self-check (the D65 white point ≈ [95.04, 100, 108.88]) guards transcription.
+public CIE reference tables, not proprietary ISO/AATCC content (rule 5). The
+observer matrix is rescaled so a perfect diffuser hits the canonical white point
+exactly (consistent with the sRGB→XYZ matrix), which also self-checks the tables.
 """
 
 from __future__ import annotations
@@ -36,7 +45,7 @@ from app.vision.delta_e import compute_delta_e_ciede2000
 WAVELENGTHS: list[int] = list(range(400, 701, 10))
 N_BANDS = len(WAVELENGTHS)
 
-ESTIMATE_METHOD = "smoothest_metamer_constrained_v1"
+ESTIMATE_METHOD = "lhtss_burns_v2"
 ESTIMATE_LABEL = "STIMATA"
 DISCLAIMER = (
     "Curva di riflettanza STIMATA dal colore (metamero più liscio), NON una "
@@ -117,18 +126,35 @@ def illuminant_spd(name: str) -> list[float]:
 
 SUPPORTED_ILLUMINANTS = ("D65", "A")
 
+# Canonical CIE 2° white points. We rescale each observer-matrix row so a perfect
+# diffuser (r≡1) reproduces these exactly: it cancels the small finite-bandwidth
+# (10 nm) integration error so RGB white maps to the standard white and the
+# sRGB→XYZ matrix stays consistent with our T.
+_CANONICAL_WHITE: dict[str, tuple[float, float, float]] = {
+    "D65": (95.047, 100.0, 108.883),
+    "A": (109.850, 100.0, 35.585),
+}
+
 
 def _build_observer_matrix(illuminant: str) -> Any:
-    """3×N matrix A so that [X,Y,Z] = A @ reflectance, normalised to Y=100 for a
-    perfect (r≡1) diffuser. Rows are k·S·x̄, k·S·ȳ, k·S·z̄."""
+    """3×N matrix T so that [X,Y,Z] = T @ reflectance, with the perfect (r≡1)
+    diffuser landing exactly on the canonical white point. Rows ∝ S·x̄, S·ȳ, S·z̄."""
     import numpy as np
 
-    spd = np.asarray(illuminant_spd(illuminant), dtype=np.float64)
+    key = illuminant.upper()
+    spd = np.asarray(illuminant_spd(key), dtype=np.float64)
     xbar = np.asarray([_CMF[w][0] for w in WAVELENGTHS], dtype=np.float64)
     ybar = np.asarray([_CMF[w][1] for w in WAVELENGTHS], dtype=np.float64)
     zbar = np.asarray([_CMF[w][2] for w in WAVELENGTHS], dtype=np.float64)
-    k = 100.0 / float((spd * ybar).sum())
-    return np.vstack([k * spd * xbar, k * spd * ybar, k * spd * zbar])
+    rows = np.vstack([spd * xbar, spd * ybar, spd * zbar])
+    white = _CANONICAL_WHITE.get(key, (None, 100.0, None))
+    ones = np.ones(N_BANDS)
+    for i in range(3):
+        target = white[i]
+        if target is None:  # unknown illuminant: just normalise Y to 100
+            target = 100.0 if i == 1 else float(rows[i] @ ones)
+        rows[i] *= target / float(rows[i] @ ones)
+    return rows
 
 
 def white_point(illuminant: str = "D65") -> list[float]:
@@ -172,64 +198,114 @@ def xyz_to_lab(xyz: Any, white: list[float]) -> list[float]:
     return [116.0 * fy - 16.0, 500.0 * (fx - fy), 200.0 * (fy - fz)]
 
 
-def _second_difference_operator() -> Any:
-    """(N-2)×N second-difference matrix used as the smoothness penalty."""
+def _smoothness_gram() -> Any:
+    """KᵀK with K the first-difference operator — the slope² penalty on z
+    (Burns LHTSS). Tiny ridge lifts the constant-vector nullspace."""
     import numpy as np
 
-    d = np.zeros((N_BANDS - 2, N_BANDS))
-    for i in range(N_BANDS - 2):
-        d[i, i] = 1.0
-        d[i, i + 1] = -2.0
-        d[i, i + 2] = 1.0
-    return d
+    k = np.zeros((N_BANDS - 1, N_BANDS))
+    for i in range(N_BANDS - 1):
+        k[i, i] = -1.0
+        k[i, i + 1] = 1.0
+    return k.T @ k + 1e-8 * np.eye(N_BANDS)
 
 
-def estimate_reflectance(
-    lab: list[float],
+def _solve_lhtss(target_xyz: Any, t_obs: Any, *, max_iter: int = 60) -> tuple[Any, bool, int]:
+    """Least Hyperbolic Tangent Slope Squared (Scott Burns).
+
+    Find reflectance ρ∈(0,1) reproducing the tristimulus `target_xyz` under the
+    observer matrix `t_obs` (3×N) while minimising the squared slope of the
+    pre-image z, where ρ = (tanh z + 1)/2. Solves the Lagrangian KKT system
+        F₁ = D z + diag(ρ′)·Tᵀλ = 0
+        F₂ = T·ρ − b = 0
+    by damped Newton. Returns (ρ, converged, iterations). When the colour is
+    outside the object-colour solid the equality is infeasible: Newton stalls and
+    we return the closest ρ with converged=False (caller flags it)."""
+    import numpy as np
+
+    d = _smoothness_gram()
+    b = np.asarray(target_xyz, dtype=np.float64)
+    z = np.zeros(N_BANDS)
+    lam = np.zeros(3)
+
+    def residual(zv: Any, lv: Any) -> Any:
+        t = np.tanh(zv)
+        rho = (t + 1.0) / 2.0
+        rho1 = (1.0 - t * t) / 2.0
+        f1 = d @ zv + rho1 * (t_obs.T @ lv)
+        f2 = t_obs @ rho - b
+        return np.concatenate([f1, f2])
+
+    converged = False
+    iters = 0
+    with np.errstate(over="ignore", invalid="ignore"):
+        for it in range(1, max_iter + 1):
+            iters = it
+            t = np.tanh(z)
+            rho1 = (1.0 - t * t) / 2.0
+            rho2 = -(1.0 - t * t) * t  # d²ρ/dz²
+            ttl = t_obs.T @ lam
+            j11 = d + np.diag(rho2 * ttl)
+            j12 = rho1[:, None] * t_obs.T  # N×3
+            j21 = t_obs * rho1[None, :]  # 3×N
+            jac = np.block([[j11, j12], [j21, np.zeros((3, 3))]])
+            f = residual(z, lam)
+            nrm = float(np.linalg.norm(f))
+            if nrm < 1e-9:
+                converged = True
+                break
+            try:
+                step = np.linalg.solve(jac, -f)
+            except np.linalg.LinAlgError:
+                break
+            # backtracking line search on ‖F‖
+            alpha = 1.0
+            for _ in range(25):
+                zn = z + alpha * step[:N_BANDS]
+                ln = lam + alpha * step[N_BANDS:]
+                if float(np.linalg.norm(residual(zn, ln))) < nrm:
+                    break
+                alpha *= 0.5
+            z = z + alpha * step[:N_BANDS]
+            lam = lam + alpha * step[N_BANDS:]
+        else:
+            converged = float(np.linalg.norm(residual(z, lam))) < 1e-9
+
+    rho = (np.tanh(z) + 1.0) / 2.0
+    return rho, converged, iters
+
+
+def _build_estimate(
+    target_xyz: Any,
+    t_obs: Any,
     *,
-    illuminant: str = "D65",
-    observer: str = "2",
-    ridge: float = 1e-3,
+    illuminant: str,
+    observer: str,
+    input_lab: list[float] | None = None,
 ) -> dict[str, Any]:
-    """Smoothest-metamer reflectance estimate for a measured CIELAB colour.
-
-    Returns a STIMATA result: wavelengths, reflectance (0..1), method, label,
-    confidence (heuristic), round-trip ΔE, illuminant/observer, disclaimer.
-    """
+    """Run LHTSS and package the STIMATA result dict (shared by the Lab/XYZ/RGB
+    entry points)."""
     import numpy as np
 
-    if observer not in ("2",):
-        raise ValueError("Solo osservatore CIE 1931 2° supportato.")
+    white = [float(v) for v in (t_obs @ np.ones(N_BANDS))]
+    if input_lab is None:
+        input_lab = xyz_to_lab(np.asarray(target_xyz, dtype=np.float64), white)
 
-    a = _build_observer_matrix(illuminant)  # 3×N
-    white = [float(v) for v in (a @ np.ones(N_BANDS))]
-    target_xyz = lab_to_xyz(lab, white)
-
-    # min rᵀMr  s.t.  A r = xyz   ->   r = M⁻¹Aᵀ (A M⁻¹Aᵀ)⁻¹ xyz
-    # (errstate: silence benign BLAS FP flags on the small dense solves)
-    with np.errstate(divide="ignore", over="ignore", invalid="ignore"):
-        d = _second_difference_operator()
-        m = d.T @ d + ridge * np.eye(N_BANDS)
-        minv_at = np.linalg.solve(m, a.T)  # N×3
-        s = a @ minv_at  # 3×3
-        r = minv_at @ np.linalg.solve(s, target_xyz)  # N
-    r_unclipped = r.copy()
-    r = np.clip(r, 0.0, 1.0)
-
-    # colour fidelity after clipping (the honest error of the estimate)
-    rt_xyz = a @ r
+    rho, converged, iters = _solve_lhtss(target_xyz, t_obs)
+    rt_xyz = t_obs @ rho
     rt_lab = xyz_to_lab(rt_xyz, white)
-    roundtrip_delta_e = compute_delta_e_ciede2000(lab, rt_lab)
+    roundtrip_delta_e = compute_delta_e_ciede2000(input_lab, rt_lab)
+    in_gamut = bool(converged and roundtrip_delta_e < 1.0)
 
-    # heuristic, NON-validated confidence: penalise colour error + clipping
-    clip_frac = float(np.mean((r_unclipped < -1e-6) | (r_unclipped > 1.0 + 1e-6)))
-    confidence = max(0.0, min(1.0, 1.0 - roundtrip_delta_e / 5.0 - 0.5 * clip_frac))
-
+    confidence = max(
+        0.0, min(1.0, 1.0 - roundtrip_delta_e / 5.0 - (0.0 if converged else 0.3))
+    )
     warnings: list[str] = []
-    if roundtrip_delta_e > 1.0:
+    if not in_gamut:
         warnings.append(
-            f"fedeltà colore ridotta: ΔE round-trip {roundtrip_delta_e:.2f} "
-            "(clipping del riflettanza fuori 0..1)"
+            f"colore al limite/fuori dal gamut riflettanza: ricostruzione "
+            f"approssimata (ΔE round-trip {roundtrip_delta_e:.2f}). Su colori molto "
+            "saturi nessuna riflettanza 0..1 riproduce esattamente il colore."
         )
 
     return {
@@ -237,18 +313,90 @@ def estimate_reflectance(
         "not_a_measurement": True,
         "label": ESTIMATE_LABEL,
         "method": ESTIMATE_METHOD,
-        "engine": "smoothest_metamer",
+        "engine": "lhtss",
         "illuminant": illuminant.upper(),
         "observer": observer,
+        "in_gamut": in_gamut,
+        "iterations": int(iters),
         "wavelengths_nm": list(WAVELENGTHS),
-        "reflectance": [round(float(v), 5) for v in r],
-        "input_lab": [round(float(v), 3) for v in lab],
+        "reflectance": [round(float(v), 5) for v in rho],
+        "input_lab": [round(float(v), 3) for v in input_lab],
         "roundtrip_lab": [round(float(v), 3) for v in rt_lab],
         "roundtrip_delta_e": round(float(roundtrip_delta_e), 3),
         "confidence": round(float(confidence), 3),
         "warnings": warnings,
         "disclaimer": DISCLAIMER,
     }
+
+
+def estimate_reflectance(
+    lab: list[float],
+    *,
+    illuminant: str = "D65",
+    observer: str = "2",
+) -> dict[str, Any]:
+    """LHTSS reflectance estimate for a measured CIELAB colour.
+
+    Returns a STIMATA result: wavelengths, reflectance (0..1), method, label,
+    confidence (heuristic), round-trip ΔE, illuminant/observer, disclaimer."""
+    if observer not in ("2",):
+        raise ValueError("Solo osservatore CIE 1931 2° supportato.")
+    t_obs = _build_observer_matrix(illuminant)
+    white = [float(v) for v in (t_obs @ _np_ones())]
+    target_xyz = lab_to_xyz(lab, white)
+    return _build_estimate(
+        target_xyz, t_obs, illuminant=illuminant, observer=observer, input_lab=lab
+    )
+
+
+def _np_ones() -> Any:
+    import numpy as np
+
+    return np.ones(N_BANDS)
+
+
+def _srgb_to_xyz(rgb: Any) -> Any:
+    """sRGB (8-bit or 0..1) → CIE XYZ (D65, Y on 0..100). The standard sRGB→XYZ
+    matrix; its white maps to the canonical D65 white our observer matrix uses."""
+    import numpy as np
+
+    c = np.asarray(rgb, dtype=np.float64)
+    if float(c.max()) > 1.0:
+        c = c / 255.0
+    c = np.clip(c, 0.0, 1.0)
+    lin = np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+    m = np.array(
+        [
+            [0.4124564, 0.3575761, 0.1804375],
+            [0.2126729, 0.7151522, 0.0721750],
+            [0.0193339, 0.1191920, 0.9503041],
+        ]
+    )
+    return (m @ lin) * 100.0
+
+
+def reflectance_from_xyz(
+    xyz: list[float], *, illuminant: str = "D65", observer: str = "2"
+) -> dict[str, Any]:
+    """LHTSS reflectance estimate from a tristimulus XYZ (Y on 0..100)."""
+    if observer not in ("2",):
+        raise ValueError("Solo osservatore CIE 1931 2° supportato.")
+    t_obs = _build_observer_matrix(illuminant)
+    return _build_estimate(xyz, t_obs, illuminant=illuminant, observer=observer)
+
+
+def reflectance_from_rgb(
+    rgb: list[float], *, observer: str = "2"
+) -> dict[str, Any]:
+    """LHTSS reflectance estimate from an sRGB triplet (e.g. an iPhone pixel).
+
+    sRGB is a D65-referenced encoding, so the reflectance is reconstructed under
+    D65; render it under other illuminants afterwards. STIMATA, never a measure."""
+    target_xyz = [float(v) for v in _srgb_to_xyz(rgb)]
+    out = reflectance_from_xyz(target_xyz, illuminant="D65", observer=observer)
+    rgb8 = rgb if max(rgb) > 1 else [v * 255 for v in rgb]
+    out["input_rgb"] = [int(round(float(c))) for c in rgb8]
+    return out
 
 
 def render_under_illuminant(

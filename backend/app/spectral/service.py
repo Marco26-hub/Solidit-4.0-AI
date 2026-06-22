@@ -29,6 +29,7 @@ from app.vision.spectral import (
     SUPPORTED_ILLUMINANTS,
     estimate_reflectance,
     metamerism_pair,
+    reflectance_from_rgb,
 )
 
 
@@ -119,6 +120,13 @@ def estimate_lab(
     if fallback:
         out.setdefault("warnings", []).append(f"backend: {fallback} → uso metamero liscio")
     return out
+
+
+def estimate_rgb(rgb: list[float], *, observer: str = "2") -> dict[str, Any]:
+    """RGB→reflectance via the local LHTSS engine (sRGB→XYZ→reflectance, D65).
+    Uses the deterministic math directly (not the remote backend, whose contract
+    is Lab-based)."""
+    return reflectance_from_rgb(rgb, observer=observer)
 
 
 def metamerism(

@@ -22,6 +22,17 @@ class EstimateRequest(BaseModel):
     observer: Observer = "2"
 
 
+class RgbInput(BaseModel):
+    r: int = Field(ge=0, le=255)
+    g: int = Field(ge=0, le=255)
+    b: int = Field(ge=0, le=255)
+
+
+class RgbEstimateRequest(BaseModel):
+    rgb: RgbInput
+    observer: Observer = "2"
+
+
 class ReflectanceEstimate(BaseModel):
     estimate: bool = True
     not_a_measurement: bool = True
@@ -30,9 +41,12 @@ class ReflectanceEstimate(BaseModel):
     engine: str
     illuminant: str
     observer: str
+    in_gamut: bool | None = None
+    iterations: int | None = None
     wavelengths_nm: list[int]
     reflectance: list[float]
     input_lab: list[float]
+    input_rgb: list[int] | None = None
     roundtrip_lab: list[float]
     roundtrip_delta_e: float
     confidence: float

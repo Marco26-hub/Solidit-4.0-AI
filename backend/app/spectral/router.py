@@ -20,6 +20,7 @@ from app.spectral.schemas import (
     RenderRequest,
     RenderResult,
     ResultSpectralOut,
+    RgbEstimateRequest,
 )
 from app.vision.spectral import render_under_illuminant
 
@@ -37,6 +38,19 @@ async def estimate(
         service.estimate_lab,
         [body.lab.L, body.lab.a, body.lab.b],
         illuminant=body.illuminant,
+        observer=body.observer,
+    )
+    return ReflectanceEstimate.model_validate(out)
+
+
+@router.post("/estimate-rgb", response_model=ReflectanceEstimate)
+async def estimate_rgb(
+    body: RgbEstimateRequest,
+    principal: Principal = Depends(get_tenant_principal),
+) -> ReflectanceEstimate:
+    out = await run_in_threadpool(
+        service.estimate_rgb,
+        [body.rgb.r, body.rgb.g, body.rgb.b],
         observer=body.observer,
     )
     return ReflectanceEstimate.model_validate(out)
