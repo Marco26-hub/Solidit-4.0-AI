@@ -25,6 +25,98 @@ from app.db.models import (
 MIN_VALIDATION_SAMPLES = 50  # spec target for pre-validation
 
 
+def _item(key: str, label: str, status: str, detail: str) -> dict[str, str]:
+    return {"key": key, "label": label, "status": status, "detail": detail}
+
+
+def _build_readiness_items(
+    *,
+    valid_refs_count: int,
+    method_docs_count: int,
+    total_scored: int,
+    best_pct: float,
+    locked_reports_count: int,
+    pt_ok_count: int,
+    pt_total: int,
+) -> list[dict[str, str]]:
+    return [
+        _item(
+            "quality_manual",
+            "Manuale qualità e dossier Accredia collegati",
+            "done",
+            "manuale, procedura, matrice evidenze e moduli operativi",
+        ),
+        _item("method", "Metodo definito e documentato (SOP)", "done", "Fascicolo + SOP 01-08"),
+        _item(
+            "hardware_gate",
+            "Kit hardware obbligatorio in analisi",
+            "done",
+            "lightbox, white tile e grey scale vincolati dal software",
+        ),
+        _item("rls", "Multi-tenant + audit trail append-only", "done", "RLS + audit"),
+        _item(
+            "report_lock",
+            "Report non modificabile dopo emissione",
+            "done",
+            "finalize/lock + SHA-256",
+        ),
+        _item(
+            "evidence_matrix",
+            "Matrice requisiti-evidenze disponibile",
+            "done",
+            "collega requisiti, SOP, moduli software e gap residui",
+        ),
+        _item(
+            "uncertainty",
+            "Motore incertezza e guard band",
+            "partial",
+            "software pronto; budget reale da compilare con dati validati",
+        ),
+        _item(
+            "instruments",
+            "Strumenti/riferimenti tarati e in validità",
+            "done" if valid_refs_count else "todo",
+            f"{valid_refs_count} riferimenti validi",
+        ),
+        _item(
+            "norms",
+            "Norme di riferimento caricate (copia licenziata)",
+            "done" if method_docs_count else "todo",
+            f"{method_docs_count} documenti",
+        ),
+        _item(
+            "validation",
+            f"Validazione metodo (≥{MIN_VALIDATION_SAMPLES} campioni, ≥90% entro ±0.5)",
+            "done"
+            if (total_scored >= MIN_VALIDATION_SAMPLES and best_pct >= 90)
+            else ("partial" if total_scored else "todo"),
+            f"{total_scored} campioni · miglior {best_pct}% entro ±0.5",
+        ),
+        _item(
+            "reports",
+            "Report ufficiali emessi (finalizzati)",
+            "done" if locked_reports_count else "todo",
+            f"{locked_reports_count} report bloccati",
+        ),
+        _item(
+            "proficiency",
+            "Prove interlaboratorio / PT (esito soddisfacente)",
+            "done" if pt_ok_count else ("partial" if pt_total else "todo"),
+            f"{pt_ok_count}/{pt_total} round soddisfacenti",
+        ),
+        # off-software (the lab/consultant must do these)
+        _item(
+            "grading_validated",
+            "Profili grading validati/licenziati",
+            "todo",
+            "sostituire ESEMPIO",
+        ),
+        _item("operators", "Operatori formati e qualificati", "todo", "registro formazione"),
+        _item("consultant", "Revisione consulente ISO/IEC 17025", "todo", "esterno"),
+        _item("scope", "Metodo incluso nello scopo Accredia", "todo", "iter accreditamento"),
+    ]
+
+
 async def readiness(session: AsyncSession, company_id: uuid.UUID) -> dict:
     runs = list(
         (await session.execute(select(ValidationRun).where(ValidationRun.company_id == company_id)))
@@ -75,64 +167,26 @@ async def readiness(session: AsyncSession, company_id: uuid.UUID) -> dict:
     )
     pt_ok = sum(1 for p in pts if p.verdict == "soddisfacente")
 
-    def item(key, label, status, detail):
-        return {"key": key, "label": label, "status": status, "detail": detail}
-
-    items = [
-        item("method", "Metodo definito e documentato (SOP)", "done", "Fascicolo + SOP 01-08"),
-        item("rls", "Multi-tenant + audit trail append-only", "done", "RLS + audit"),
-        item(
-            "report_lock",
-            "Report non modificabile dopo emissione",
-            "done",
-            "finalize/lock + SHA-256",
-        ),
-        item(
-            "instruments",
-            "Strumenti/riferimenti tarati e in validità",
-            "done" if valid_refs else "todo",
-            f"{len(valid_refs)} riferimenti validi",
-        ),
-        item(
-            "norms",
-            "Norme di riferimento caricate (copia licenziata)",
-            "done" if method_docs else "todo",
-            f"{method_docs} documenti",
-        ),
-        item(
-            "validation",
-            f"Validazione metodo (≥{MIN_VALIDATION_SAMPLES} campioni, ≥90% entro ±0.5)",
-            "done"
-            if (total_scored >= MIN_VALIDATION_SAMPLES and best_pct >= 90)
-            else ("partial" if total_scored else "todo"),
-            f"{total_scored} campioni · miglior {best_pct}% entro ±0.5",
-        ),
-        item(
-            "reports",
-            "Report ufficiali emessi (finalizzati)",
-            "done" if locked_reports else "todo",
-            f"{locked_reports} report bloccati",
-        ),
-        item(
-            "proficiency",
-            "Prove interlaboratorio / PT (esito soddisfacente)",
-            "done" if pt_ok else ("partial" if pts else "todo"),
-            f"{pt_ok}/{len(pts)} round soddisfacenti",
-        ),
-        # off-software (the lab/consultant must do these)
-        item("uncertainty", "Incertezza stimata", "todo", "da redigere dopo validazione"),
-        item(
-            "grading_validated", "Profili grading validati/licenziati", "todo", "sostituire ESEMPIO"
-        ),
-        item("operators", "Operatori formati e qualificati", "todo", "registro formazione"),
-        item("consultant", "Revisione consulente ISO/IEC 17025", "todo", "esterno"),
-        item("scope", "Metodo incluso nello scopo Accredia", "todo", "iter accreditamento"),
-    ]
+    items = _build_readiness_items(
+        valid_refs_count=len(valid_refs),
+        method_docs_count=method_docs,
+        total_scored=total_scored,
+        best_pct=best_pct,
+        locked_reports_count=locked_reports,
+        pt_ok_count=pt_ok,
+        pt_total=len(pts),
+    )
 
     done = sum(1 for i in items if i["status"] == "done")
-    if done <= 4:
+    if done <= 6:
         level = "Prototipo / strumento interno"
-    elif best_pct >= 90 and total_scored >= MIN_VALIDATION_SAMPLES:
+    elif (
+        best_pct >= 90
+        and total_scored >= MIN_VALIDATION_SAMPLES
+        and valid_refs
+        and method_docs
+        and locked_reports
+    ):
         level = "Metodo pre-validato"
     else:
         level = "Tool interno (validazione in corso)"

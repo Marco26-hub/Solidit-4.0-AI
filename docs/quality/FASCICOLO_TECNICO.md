@@ -47,9 +47,12 @@ misura curve spettrali.
 | 11 | Piano e report di validazione | da popolare con campioni reali | modulo app `/validation` |
 | 12 | Manuale qualita ISO 17025 | DRAFT | `../accredia/MANUALE_QUALITA_ISO17025.md` |
 | 13 | Validazione metodo ingegneristica | DRAFT | `../accredia/VALIDAZIONE_METODO_INGEGNERISTICA.md` |
-| 14 | Stima incertezza | modulo software pronto, da compilare con dati reali | `/colorimetry` |
-| 15 | Valutazione rischi | da redigere | — |
-| 16 | Report tipo + audit trail dimostrativo | generato dall'app | modulo Report |
+| 14 | Matrice requisiti-evidenze | TEMPLATE | `../accredia/MATRICE_REQUISITI_EVIDENZE.md` |
+| 15 | Procedura domanda Accredia | TEMPLATE | `../accredia/PROCEDURA_DOMANDA_ACCREDIA.md` |
+| 16 | Moduli operativi | TEMPLATE | `../accredia/MODULI_OPERATIVI.md` |
+| 17 | Stima incertezza | modulo software pronto, da compilare con dati reali | `/colorimetry` |
+| 18 | Valutazione rischi | template disponibile | `../accredia/MODULI_OPERATIVI.md` |
+| 19 | Report tipo + audit trail dimostrativo | generato dall'app | modulo Report |
 
 ## Riferimenti normativi (solo identificativi)
 
@@ -69,6 +72,12 @@ misura curve spettrali.
   (scarto medio, % entro ±0.5 grado, bias, RMSE).
 - Ripetibilità: aggregazione repliche con scarto massimo gradi.
 - Quality gate cattura + modalità strict (rifiuto cattura non idonea).
+- Kit hardware obbligatorio per analisi colore/staining: lightbox + riferimenti
+  fisici validi; il software blocca analisi se mancano riferimenti richiesti.
+- Motore incertezza: contributi Type A/B, distribuzioni, Welch-Satterthwaite e
+  guard band decisionale.
+- Readiness accreditamento: checklist live su documenti, riferimenti,
+  validazione, report bloccati e PT/ILC.
 
 ## Checklist maturità (sintesi — vedi SOP per dettaglio)
 
@@ -80,6 +89,10 @@ misura curve spettrali.
 - [x] Modulo validazione pronto.
 - [ ] Validazione con 50–100 campioni reali vs spettrofotometro/lab.
 - [x] Modulo calcolo incertezza GUM/guard band pronto.
+- [x] Manuale qualita ISO/IEC 17025 draft.
+- [x] Matrice requisiti-evidenze draft.
+- [x] Procedura domanda Accredia draft.
+- [x] Moduli operativi draft.
 - [ ] Budget incertezza compilato con dati reali.
 - [ ] Profili grading validati/licenziati (sostituire ESEMPIO).
 - [ ] SOP riviste da consulente qualificato.

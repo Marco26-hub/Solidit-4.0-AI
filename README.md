@@ -38,6 +38,29 @@ Solidità 4.0 non deve essere venduto inizialmente come sostituto diretto di un 
 - ROADMAP_SPRINT.md
 - CLAUDE.md
 - HANDOFF.md
+- docs/quality/FASCICOLO_TECNICO.md
+- docs/accredia/MANUALE_QUALITA_ISO17025.md
+- docs/accredia/VALIDAZIONE_METODO_INGEGNERISTICA.md
+- docs/accredia/MATRICE_REQUISITI_EVIDENZE.md
+- docs/accredia/PROCEDURA_DOMANDA_ACCREDIA.md
+- docs/accredia/MODULI_OPERATIVI.md
+
+## Dossier Accredia / ISO 17025
+
+Il dossier in `docs/accredia/` collega manuale qualita, validazione
+ingegneristica, matrice evidenze, procedura domanda e moduli operativi.
+
+Percorso consigliato:
+
+1. usare `docs/accredia/MATRICE_REQUISITI_EVIDENZE.md` per la gap analysis;
+2. compilare `docs/accredia/MODULI_OPERATIVI.md` con dati reali;
+3. seguire `docs/accredia/PROCEDURA_DOMANDA_ACCREDIA.md`;
+4. congelare release software, algoritmo, kit hardware e profili grading;
+5. validare con campioni reali e budget incertezza approvato.
+
+Nota: la piattaforma supporta il laboratorio, ma non genera da sola
+l'accreditamento. Restano necessari validazione reale, certificati, operatori
+qualificati, audit interno, riesame direzione e moduli Accredia ufficiali.
 
 ## Nota importante
 

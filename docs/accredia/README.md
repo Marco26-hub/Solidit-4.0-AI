@@ -19,6 +19,32 @@ di accreditamento dichiarato.
 |---|---|
 | `MANUALE_QUALITA_ISO17025.md` | Manuale qualita laboratorio, con controlli organizzativi e tecnici |
 | `VALIDAZIONE_METODO_INGEGNERISTICA.md` | Protocollo tecnico per validare il metodo digitale RGB->Lab->DeltaE->grado |
+| `MATRICE_REQUISITI_EVIDENZE.md` | Collegamento tra requisiti, SOP, software, evidenze e gap residui |
+| `PROCEDURA_DOMANDA_ACCREDIA.md` | Sequenza operativa per preparare domanda o estensione dello scopo |
+| `MODULI_OPERATIVI.md` | Template compilabili per validazione, incertezza, audit, rischi e riesame |
+
+## Ordine di lavoro consigliato
+
+1. Definire lo scopo tecnico limitato della prova.
+2. Compilare la matrice requisiti-evidenze.
+3. Revisionare manuale qualita, SOP e fascicolo tecnico.
+4. Congelare versione software, algoritmo, hardware e profili grading.
+5. Eseguire validazione ingegneristica con campioni reali.
+6. Compilare budget incertezza e regola decisionale.
+7. Eseguire audit interno e riesame direzione.
+8. Scaricare e compilare i moduli Accredia ufficiali aggiornati.
+
+## Collegamento software-documentazione
+
+| Area | Documento guida | Modulo software |
+|---|---|---|
+| Readiness accreditamento | `MATRICE_REQUISITI_EVIDENZE.md` | `/api/v1/accreditation/readiness` |
+| Tarature e riferimenti | `SOP_02_tarature.md` | Registro riferimenti fisici |
+| Acquisizione vincolata al kit | `SOP_01_acquisizione.md` | Vision analysis con reference check |
+| Analisi colore | `SOP_03_analisi_colore.md` | Pipeline geometry + color correction |
+| Validazione metodo | `VALIDAZIONE_METODO_INGEGNERISTICA.md` | `/validation` |
+| Incertezza | `MODULI_OPERATIVI.md` | `/colorimetry` |
+| Report ufficiali | `SOP_04_report.md` | Report lock + SHA-256 integrity hash |
 
 ## Collegamenti ai documenti gia presenti
 
@@ -45,3 +71,11 @@ di accreditamento dichiarato.
 - Evidenze PT/ILC o giustificazione documentata.
 - Audit interno e riesame direzione.
 
+## Cosa non e ancora automatico
+
+- La compilazione dei moduli Accredia ufficiali.
+- La certificazione dei riferimenti fisici.
+- La qualifica degli operatori.
+- La validazione con campioni reali.
+- L'approvazione metrologica del budget incertezza.
+- La decisione dell'ente di accreditamento.
