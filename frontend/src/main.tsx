@@ -11,6 +11,7 @@ import { BillingPage } from "@/features/billing/BillingPage";
 import { BatchZeroPage } from "@/features/batch-zero/BatchZeroPage";
 import { BrandSpecsPage } from "@/features/brand-specs/BrandSpecsPage";
 import { LedgerPage } from "@/features/certificate-ledger/LedgerPage";
+import { ColorimetryPage } from "@/features/colorimetry/ColorimetryPage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { DevicesPage } from "@/features/devices/DevicesPage";
 import { MethodsPage } from "@/features/methods/MethodsPage";
@@ -40,6 +41,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                 <Route path="/methods" element={<MethodsPage />} />
                 <Route path="/validation" element={<ValidationPage />} />
                 <Route path="/spectral" element={<SpectralLabPage />} />
+                <Route path="/colorimetry" element={<ColorimetryPage />} />
                 <Route path="/billing" element={<BillingPage />} />
                 <Route path="/ledger" element={<LedgerPage />} />
                 <Route path="/devices" element={<DevicesPage />} />

@@ -17,6 +17,7 @@ from app.billing.router import router as billing_router
 from app.brand_specs.router import router as brand_specs_router
 from app.calibration.router import router as calibration_router
 from app.captures.router import router as captures_router
+from app.colorimetry.router import router as colorimetry_router
 from app.common.errors import register_exception_handlers
 from app.common.logging import configure_logging
 from app.companies.router import router as companies_router
@@ -85,6 +86,7 @@ app.include_router(validation_router)
 app.include_router(proficiency_router)
 app.include_router(accreditation_router)
 app.include_router(spectral_router)
+app.include_router(colorimetry_router)
 
 
 @app.get("/healthz", tags=["meta"])

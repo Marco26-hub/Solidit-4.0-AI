@@ -16,6 +16,7 @@ const NAV: NavItem[] = [
   { to: "/methods", label: "Norme", icon: "book" },
   { to: "/validation", label: "Validazione", icon: "check" },
   { to: "/spectral", label: "Spettro (R&D)", icon: "sun" },
+  { to: "/colorimetry", label: "Colorimetria", icon: "drop" },
   { to: "/ledger", label: "Report", icon: "doc" },
   { to: "/devices", label: "Device", icon: "device" },
 ];

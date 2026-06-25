@@ -57,6 +57,21 @@ Monorepo attivo: `backend/` (FastAPI, Python 3.12) · `frontend/` (React+Vite+TS
   `SPECTRAL_INFERENCE_URL`, fallback a smoothest se assente). Pagina frontend
   "Spettro (R&D)" + bottone per-risultato nelle Prove. Confidenza = euristica
   NON validata; accuratezza reale richiede dataset spettrofotometro.
+- **Colorimetria accreditabile (caratterizzazione camera + incertezza)**
+  `app/colorimetry/` + `vision/characterization.py` + `vision/uncertainty.py`:
+  la strada ONESTA verso un risultato equivalente allo spettrofotometro **sul
+  ΔE/grado** (non sugli spettri). `fit_camera_transform` tara una trasformazione
+  **RGB lineare→XYZ/Lab** dal ColorChecker 24-patch via **root-polynomial
+  (Finlayson)**, esposizione-invariante, con ΔE residuo (accuratezza). Su camera
+  realistica ~0.5 ΔE medio (colorimetro-grade) vs ~5-9 ΔE del sRGB grezzo.
+  `combine_uncertainty` = budget d'incertezza GUM (Type A/Type B, distribuzioni
+  rettangolare/triangolare/normale, Welch-Satterthwaite, guard band decisionale)
+  che usa il residuo di caratterizzazione → requisito ISO 17025 §7.6. Endpoint
+  `POST /colorimetry/characterize | /apply | /uncertainty`.
+  **SCOPO ristretto e onesto**: vale per opachi sotto l'illuminante di cattura;
+  NON copre metamerismo multi-illuminante, UV/sbiancanti ottici, lucido/effetto.
+  Input = **RGB LINEARE (RAW/ProRAW)**, non sRGB gamma. L'accreditamento Accredia
+  resta al lab+metodo+consulente 17025 su scopo definito + campioni reali.
 - **Tarature/strumenti** (ISO 17025): registro `calibration_references`
   (scala grigia/piastrina/target/lightbox + certificato + scadenza) —
   **analisi BLOCCATA se riferimento scaduto/dismesso**; provenienza strumenti
