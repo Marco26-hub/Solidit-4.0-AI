@@ -45,9 +45,11 @@ misura curve spettrali.
 | 9 | SOP formazione operatori | DRAFT | `SOP_08_formazione.md` |
 | 10 | Registri (strumenti/tarature/operatori/versioni/NC) | TEMPLATE | `REGISTRI.md` |
 | 11 | Piano e report di validazione | da popolare con campioni reali | modulo app `/validation` |
-| 12 | Stima incertezza | da redigere dopo validazione | — |
-| 13 | Valutazione rischi | da redigere | — |
-| 14 | Report tipo + audit trail dimostrativo | generato dall'app | modulo Report |
+| 12 | Manuale qualita ISO 17025 | DRAFT | `../accredia/MANUALE_QUALITA_ISO17025.md` |
+| 13 | Validazione metodo ingegneristica | DRAFT | `../accredia/VALIDAZIONE_METODO_INGEGNERISTICA.md` |
+| 14 | Stima incertezza | modulo software pronto, da compilare con dati reali | `/colorimetry` |
+| 15 | Valutazione rischi | da redigere | — |
+| 16 | Report tipo + audit trail dimostrativo | generato dall'app | modulo Report |
 
 ## Riferimenti normativi (solo identificativi)
 
@@ -77,7 +79,8 @@ misura curve spettrali.
 - [x] Gestione strumenti/tarature con scadenze.
 - [x] Modulo validazione pronto.
 - [ ] Validazione con 50–100 campioni reali vs spettrofotometro/lab.
-- [ ] Incertezza stimata.
+- [x] Modulo calcolo incertezza GUM/guard band pronto.
+- [ ] Budget incertezza compilato con dati reali.
 - [ ] Profili grading validati/licenziati (sostituire ESEMPIO).
 - [ ] SOP riviste da consulente qualificato.
 - [ ] Kit hardware con certificati.

@@ -23,8 +23,9 @@ certificati e in validità; impedire prove con strumenti scaduti.
 - Stato calcolato: **valido / in scadenza (≤30 gg) / scaduto / dismesso**.
 - **L'analisi è BLOCCATA** se un riferimento collegato alla cattura è scaduto o
   dismesso (errore `reference_invalid`).
-- Cattura senza riferimenti collegati → ammessa ma marcata "non accreditabile"
-  (warning nel risultato/report).
+- Analisi Vision senza kit minimo collegato → **BLOCCATA**. Per staining sono
+  richiesti light box, scala grigia e piastrina bianca validi; per colour-change
+  sono richiesti light box e piastrina bianca validi.
 
 ## Procedura periodica
 

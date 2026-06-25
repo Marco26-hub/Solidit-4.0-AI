@@ -9,17 +9,19 @@ qualità (riesame profili grading).
 
 ## Pipeline (implementata)
 
-1. Quality gate cattura (blur/esposizione/fill); strict → rifiuto.
-2. Correzione colore: matrice device **oppure** white-balance da riferimento
+1. Verifica kit hardware/tarature: l'analisi è bloccata se mancano i riferimenti
+   minimi validi o se sono scaduti/dismessi.
+2. Quality gate cattura (blur/esposizione/fill); strict → rifiuto.
+3. Correzione colore: matrice device **oppure** white-balance da riferimento
    neutro in-frame; se assente → RGB grezzo (flag `colour_correction: none`).
-3. Localizzazione automatica striscia + segmentazione bande **in ordine norma**
+4. Localizzazione automatica striscia + segmentazione bande **in ordine norma**
    (snap ai seam di colore).
-4. RGB → CIELAB → ΔE CIEDE2000 vs riferimento (batch zero per staining; Lab
+5. RGB → CIELAB → ΔE CIEDE2000 vs riferimento (batch zero per staining; Lab
    variante per colour-change).
-5. Mapping ΔE → grado grey-scale tramite **profilo configurabile** per famiglia
+6. Mapping ΔE → grado grey-scale tramite **profilo configurabile** per famiglia
    norma (ISO_105 / AATCC / ASTM).
-6. Ripetibilità: se presenti più repliche, ΔE medio + scarto massimo gradi.
-7. Pass/fail vs regole capitolato brand (se associato).
+7. Ripetibilità: se presenti più repliche, ΔE medio + scarto massimo gradi.
+8. Pass/fail vs regole capitolato brand (se associato).
 
 ## Controlli e segnalazioni (provenienza)
 

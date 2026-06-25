@@ -46,6 +46,10 @@ Registrare nel modulo app `/validation`: grado software, grado riferimento
 Report di validazione (esportabile dal modulo) + correzione profili grading se
 necessario. È il **documento di credibilità** per il consulente/laboratorio.
 
+Per il disegno sperimentale completo, includere anche
+`docs/accredia/VALIDAZIONE_METODO_INGEGNERISTICA.md`: stratificazione campioni,
+repeatability, reproducibility, MSA/Gage R&R, incertezza e guard band.
+
 ## Riferimenti
 
 ISO 105-A05 (confronto strumentale), SOP-03, SOP-05.
