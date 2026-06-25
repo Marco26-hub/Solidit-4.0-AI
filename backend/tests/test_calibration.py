@@ -32,6 +32,51 @@ async def _register(client, email, company):
     return r.json()
 
 
+async def _hardware_refs(client, h, *, suffix: str = ""):
+    future = (dt.date.today() + dt.timedelta(days=365)).isoformat()
+    lb = (
+        await client.post(
+            "/api/v1/calibration-references",
+            json={
+                "kind": "lightbox",
+                "code": f"LB{suffix}",
+                "illuminants": ["D65"],
+                "valid_until": future,
+            },
+            headers=h,
+        )
+    ).json()
+    gs = (
+        await client.post(
+            "/api/v1/calibration-references",
+            json={
+                "kind": "grey_scale",
+                "code": f"GS{suffix}",
+                "subtype": "A03",
+                "valid_until": future,
+            },
+            headers=h,
+        )
+    ).json()
+    wt = (
+        await client.post(
+            "/api/v1/calibration-references",
+            json={
+                "kind": "white_tile",
+                "code": f"WT{suffix}",
+                "reference_values": {"L": 95.1, "a": -0.2, "b": 1.1},
+                "valid_until": future,
+            },
+            headers=h,
+        )
+    ).json()
+    return {
+        "lightbox_ref_id": lb["id"],
+        "grey_scale_ref_id": gs["id"],
+        "white_tile_ref_id": wt["id"],
+    }
+
+
 async def _setup_staining(client, h, *, refs=None):
     fibers = ["diacetate", "cotton", "polyamide", "polyester", "acrylic", "wool"]
     ref = {f: {"L": 96.0, "a": 0.0, "b": 0.0} for f in fibers}
@@ -103,7 +148,9 @@ async def test_expired_reference_blocks_analyze(client, require_db):
     ).json()
     assert gs["validity"] == "expired"
 
-    cs = await _setup_staining(client, h, refs={"grey_scale_ref_id": gs["id"]})
+    refs = await _hardware_refs(client, h, suffix="-EXP")
+    refs["grey_scale_ref_id"] = gs["id"]
+    cs = await _setup_staining(client, h, refs=refs)
     r = await client.post(f"/api/v1/capture-sessions/{cs['id']}/analyze", headers=h)
     assert r.status_code == 400, r.text
     assert "scadut" in r.text.lower() or "reference_invalid" in r.text
@@ -113,32 +160,25 @@ async def test_valid_reference_allows_analyze_with_provenance(client, require_db
     reg = await _register(client, f"val-{uuid.uuid4().hex[:8]}@example.com", "Val Co")
     h = {"Authorization": f"Bearer {reg['access_token']}"}
 
-    future = (dt.date.today() + dt.timedelta(days=200)).isoformat()
-    gs = (
-        await client.post(
-            "/api/v1/calibration-references",
-            json={"kind": "grey_scale", "code": "GS-OK", "valid_until": future},
-            headers=h,
-        )
-    ).json()
-
-    cs = await _setup_staining(client, h, refs={"grey_scale_ref_id": gs["id"]})
+    refs = await _hardware_refs(client, h, suffix="-OK")
+    cs = await _setup_staining(client, h, refs=refs)
     r = await client.post(f"/api/v1/capture-sessions/{cs['id']}/analyze", headers=h)
     assert r.status_code == 201, r.text
     body = r.json()
     prov = body["results"]["references"]
+    assert prov["lightbox"]["code"] == "LB-OK"
     assert prov["grey_scale"]["code"] == "GS-OK"
+    assert prov["white_tile"]["code"] == "WT-OK"
     assert prov["grey_scale"]["validity"] in ("valid", "expiring")
 
 
-async def test_analyze_without_references_warns_not_blocks(client, require_db):
+async def test_analyze_without_references_blocks_hardware_gate(client, require_db):
     reg = await _register(client, f"now-{uuid.uuid4().hex[:8]}@example.com", "NoRef Co")
     h = {"Authorization": f"Bearer {reg['access_token']}"}
     cs = await _setup_staining(client, h)
     r = await client.post(f"/api/v1/capture-sessions/{cs['id']}/analyze", headers=h)
-    assert r.status_code == 201, r.text
-    warnings = r.json()["results"]["vision"]["warnings"]
-    assert any("riferimento" in w or "accreditabile" in w for w in warnings)
+    assert r.status_code == 400, r.text
+    assert "reference_invalid" in r.text or "kit hardware" in r.text.lower()
 
 
 async def test_blue_wool_reference_and_meta_roundtrip(client, require_db):
@@ -191,7 +231,12 @@ async def test_lightbox_illuminants_and_white_tile_cert_obs(client, require_db):
 
     lb = await client.post(
         "/api/v1/calibration-references",
-        json={"kind": "lightbox", "code": "LB-1", "illuminants": ["D65", "TL84"], "lamp_hours": 120},
+        json={
+            "kind": "lightbox",
+            "code": "LB-1",
+            "illuminants": ["D65", "TL84"],
+            "lamp_hours": 120,
+        },
         headers=h,
     )
     assert lb.status_code == 201, lb.text

@@ -314,18 +314,22 @@ function JobPanel({
   const [visFile, setVisFile] = useState<File | null>(null);
   const [lightboxRef, setLightboxRef] = useState("");
   const [greyRef, setGreyRef] = useState("");
+  const [whiteTileRef, setWhiteTileRef] = useState("");
   const [inframeGrey, setInframeGrey] = useState(false);
   const [arucoRectify, setArucoRectify] = useState(false);
   const [strict, setStrict] = useState(false);
   const refIds = () => ({
     lightbox_ref_id: lightboxRef || null,
     grey_scale_ref_id: greyRef || null,
+    white_tile_ref_id: whiteTileRef || null,
     has_inframe_grey_scale: inframeGrey,
     aruco_rectify: arucoRectify,
     strict_quality: strict,
   });
   const usableRefs = (kind: string) =>
     (calrefs.data ?? []).filter((r) => r.kind === kind && r.validity !== "retired");
+  const stainingHardwareReady = Boolean(lightboxRef && greyRef && whiteTileRef);
+  const colourChangeHardwareReady = Boolean(lightboxRef && whiteTileRef);
   const vision = useMutation({
     mutationFn: async () => {
       const cs = await createCaptureSession({
@@ -503,14 +507,14 @@ function JobPanel({
           <div className="flex items-end">
             <Button
               loading={vision.isPending}
-              disabled={!visBatch || !visFile || !methodCode}
+              disabled={!visBatch || !visFile || !methodCode || !stainingHardwareReady}
               onClick={() => vision.mutate()}
             >
               Analizza macchia
             </Button>
           </div>
         </div>
-        <div className="mt-2 grid gap-2 md:grid-cols-2">
+        <div className="mt-2 grid gap-2 md:grid-cols-3">
           <Field label="Light box (riferimento)">
             <Select value={lightboxRef} onChange={(e) => setLightboxRef(e.target.value)}>
               <option value="">— nessuno —</option>
@@ -531,7 +535,22 @@ function JobPanel({
               ))}
             </Select>
           </Field>
+          <Field label="Piastrina bianca certificata">
+            <Select value={whiteTileRef} onChange={(e) => setWhiteTileRef(e.target.value)}>
+              <option value="">— nessuna —</option>
+              {usableRefs("white_tile").map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.code} {r.validity === "expiring" ? "(in scadenza)" : ""}
+                </option>
+              ))}
+            </Select>
+          </Field>
         </div>
+        {!stainingHardwareReady && (
+          <Hint>
+            Analisi Vision bloccata: seleziona light box, scala grigia e piastrina bianca validi.
+          </Hint>
+        )}
         <div className="mt-2 flex flex-wrap gap-4">
           <label className="flex items-center gap-2 text-sm text-steel">
             <input
@@ -577,13 +596,19 @@ function JobPanel({
               <div className="flex items-end md:col-span-2">
                 <Button
                   loading={colourChange.isPending}
-                  disabled={!ccFile || !methodCode}
+                  disabled={!ccFile || !methodCode || !colourChangeHardwareReady}
                   onClick={() => colourChange.mutate()}
                 >
                   Analizza variazione
                 </Button>
               </div>
             </div>
+            {!colourChangeHardwareReady && (
+              <Hint>
+                Colour-change bloccato: seleziona light box e piastrina bianca validi nella sezione
+                Vision.
+              </Hint>
+            )}
             <p className="mt-1 text-xs text-steel">
               ΔE del tessuto vs Lab di riferimento della variante → grado di variazione colore
               (norma del metodo).

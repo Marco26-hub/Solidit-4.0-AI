@@ -29,6 +29,32 @@ async def _register(client, email, company):
     return r.json()
 
 
+async def _colour_change_refs(client, h):
+    import datetime as dt
+
+    future = (dt.date.today() + dt.timedelta(days=365)).isoformat()
+    lb = (
+        await client.post(
+            "/api/v1/calibration-references",
+            json={"kind": "lightbox", "code": "LB-CC", "valid_until": future},
+            headers=h,
+        )
+    ).json()
+    wt = (
+        await client.post(
+            "/api/v1/calibration-references",
+            json={
+                "kind": "white_tile",
+                "code": "WT-CC",
+                "reference_values": {"L": 95.0, "a": 0.0, "b": 0.0},
+                "valid_until": future,
+            },
+            headers=h,
+        )
+    ).json()
+    return {"lightbox_ref_id": lb["id"], "white_tile_ref_id": wt["id"]}
+
+
 async def test_grading_profiles_builtins_visible(client, require_db):
     reg = await _register(client, f"gp-{uuid.uuid4().hex[:8]}@example.com", "Grading Co")
     h = {"Authorization": f"Bearer {reg['access_token']}"}
@@ -135,6 +161,7 @@ async def test_colour_change_analyze_vs_variant_reference(client, require_db):
                 "test_job_id": job["id"],
                 "test_method_code": "ISO_105_X12",
                 "capture_type": "colour_change",
+                **await _colour_change_refs(client, h),
             },
             headers=h,
         )

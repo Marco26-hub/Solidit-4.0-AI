@@ -26,6 +26,8 @@ _MULTIFIBER_TYPES = ("multifiber_after", "multifiber")
 _COLOUR_CHANGE_TYPES = ("colour_change", "fabric_after")
 _MAX_REPLICATES = 5  # how many replicate photos we aggregate for repeatability
 _REPEATABILITY_TOL = 0.5  # grade deviation across replicates above this -> warning
+_STAINING_REQUIRED_REFS = ("lightbox", "grey_scale", "white_tile")
+_COLOUR_CHANGE_REQUIRED_REFS = ("lightbox", "white_tile")
 
 logger = structlog.get_logger(__name__)
 
@@ -263,11 +265,15 @@ async def _certified_white_lab(
 
 
 async def _reference_provenance(
-    session: AsyncSession, company_id: uuid.UUID, cs: CaptureSession
+    session: AsyncSession,
+    company_id: uuid.UUID,
+    cs: CaptureSession,
+    *,
+    required_slots: tuple[str, ...],
 ) -> tuple[dict, list[str]]:
     """Validate the capture's linked references (raises if any expired/retired)
-    and return (provenance, warnings). No references linked -> soft warning: the
-    capture is recorded but is not accreditation-grade."""
+    and return (provenance, warnings). Vision analysis is hardware-gated: missing
+    required kit references block analysis instead of emitting a soft warning."""
     from app.calibration.service import assert_capture_references_valid
 
     ref_ids = {
@@ -276,13 +282,11 @@ async def _reference_provenance(
         "white_tile": cs.white_tile_ref_id,
         "colour_target": cs.colour_target_ref_id,
     }
-    provenance = await assert_capture_references_valid(session, company_id, ref_ids)
+    provenance = await assert_capture_references_valid(
+        session, company_id, ref_ids, required_slots=required_slots
+    )
     warnings: list[str] = []
-    if not provenance:
-        warnings.append(
-            "references: nessuno strumento/riferimento collegato (cattura non accreditabile)"
-        )
-    elif any(p["validity"] == "expiring" for p in provenance.values()):
+    if any(p["validity"] == "expiring" for p in provenance.values()):
         warnings.append("references: un riferimento è in scadenza")
     return provenance, warnings
 
@@ -295,8 +299,11 @@ async def _analyze_staining(
     if cs.batch_id is None:
         raise AppError("Sessione senza lotto multifibra (batch).", code="no_batch")
 
-    # ISO 17025: block if a linked reference is expired/retired (before any work)
-    refs, ref_warnings = await _reference_provenance(session, company_id, cs)
+    # ISO 17025 discipline: analysis is blocked unless the required hardware kit
+    # references are linked and valid before any image processing starts.
+    refs, ref_warnings = await _reference_provenance(
+        session, company_id, cs, required_slots=_STAINING_REQUIRED_REFS
+    )
 
     # all replicate photos of the strip (newest first) — repeatability needs >1
     imgs = list(
@@ -439,8 +446,11 @@ async def _analyze_colour_change(
     cs: CaptureSession,
 ) -> MeasurementResult:
     """Colour-change analysis: compare fabric ROI against article variant reference Lab."""
-    # ISO 17025: block if a linked reference is expired/retired
-    refs, ref_warnings = await _reference_provenance(session, company_id, cs)
+    # ISO 17025 discipline: colour-change analysis also requires controlled
+    # illumination plus a certified white tile before any RGB->Lab conversion.
+    refs, ref_warnings = await _reference_provenance(
+        session, company_id, cs, required_slots=_COLOUR_CHANGE_REQUIRED_REFS
+    )
     job = await _get_job(session, company_id, cs.test_job_id)
     if job.article_variant_id is None:
         raise AppError("Colour-change richiede article_variant_id sul test job.", code="no_variant")

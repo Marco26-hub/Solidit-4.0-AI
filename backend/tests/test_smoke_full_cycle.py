@@ -166,6 +166,19 @@ async def test_full_workflow_to_report(client, require_db):
     assert blue.status_code == 201, blue.text
     assert blue.json()["series"] == "iso_1_8"
 
+    lightbox = await client.post(
+        "/api/v1/calibration-references",
+        json={
+            "kind": "lightbox",
+            "code": "LB-1",
+            "illuminants": ["D65"],
+            "valid_until": future,
+        },
+        headers=h,
+    )
+    assert lightbox.status_code == 201, lightbox.text
+    lightbox_id = lightbox.json()["id"]
+
     # ── 6. test job (linked to spec + method + article/variant) ────────────
     job = await client.post(
         "/api/v1/test-jobs",
@@ -191,6 +204,7 @@ async def test_full_workflow_to_report(client, require_db):
             "batch_id": batch_id,
             "test_method_code": METHOD,
             "capture_type": "multifiber_after",
+            "lightbox_ref_id": lightbox_id,
             "grey_scale_ref_id": grey_id,
             "white_tile_ref_id": tile_id,
         },
@@ -215,6 +229,7 @@ async def test_full_workflow_to_report(client, require_db):
     assert res["assessment_type"] == "staining"
     assert set(res["vision"]["fibers"].keys()) == set(FIBERS)
     # linked references recorded in provenance and valid
+    assert res["references"]["lightbox"]["code"] == "LB-1"
     assert res["references"]["grey_scale"]["code"] == "GS-A03"
     assert res["references"]["white_tile"]["validity"] in ("valid", "expiring")
 

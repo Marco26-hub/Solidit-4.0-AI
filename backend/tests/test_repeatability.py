@@ -31,6 +31,43 @@ async def _register(client, email, company):
     return r.json()
 
 
+async def _hardware_refs(client, h, suffix: str):
+    import datetime as dt
+
+    future = (dt.date.today() + dt.timedelta(days=365)).isoformat()
+    lb = (
+        await client.post(
+            "/api/v1/calibration-references",
+            json={"kind": "lightbox", "code": f"LB-{suffix}", "valid_until": future},
+            headers=h,
+        )
+    ).json()
+    gs = (
+        await client.post(
+            "/api/v1/calibration-references",
+            json={"kind": "grey_scale", "code": f"GS-{suffix}", "valid_until": future},
+            headers=h,
+        )
+    ).json()
+    wt = (
+        await client.post(
+            "/api/v1/calibration-references",
+            json={
+                "kind": "white_tile",
+                "code": f"WT-{suffix}",
+                "reference_values": {"L": 95.0, "a": 0.0, "b": 0.0},
+                "valid_until": future,
+            },
+            headers=h,
+        )
+    ).json()
+    return {
+        "lightbox_ref_id": lb["id"],
+        "grey_scale_ref_id": gs["id"],
+        "white_tile_ref_id": wt["id"],
+    }
+
+
 async def test_repeatability_aggregates_replicates(client, require_db):
     reg = await _register(client, f"rep-{uuid.uuid4().hex[:8]}@example.com", "Rep Co")
     h = {"Authorization": f"Bearer {reg['access_token']}"}
@@ -59,6 +96,7 @@ async def test_repeatability_aggregates_replicates(client, require_db):
                 "batch_id": batch["id"],
                 "test_method_code": "ISO_105_E04",
                 "capture_type": "multifiber_after",
+                **await _hardware_refs(client, h, "R"),
             },
             headers=h,
         )
@@ -112,6 +150,7 @@ async def test_strict_quality_rejects_poor_capture(client, require_db):
                 "test_method_code": "ISO_105_E04",
                 "capture_type": "multifiber_after",
                 "strict_quality": True,
+                **await _hardware_refs(client, h, "S"),
             },
             headers=h,
         )

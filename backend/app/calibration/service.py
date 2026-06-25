@@ -11,6 +11,12 @@ from app.common.errors import AppError, ConflictError, NotFoundError
 from app.db.models import CalibrationReference
 
 EXPIRING_DAYS = 30  # warn when a reference expires within this window
+SLOT_KINDS = {
+    "lightbox": "lightbox",
+    "grey_scale": "grey_scale",
+    "white_tile": "white_tile",
+    "colour_target": "colour_target",
+}
 
 
 def today() -> dt.date:
@@ -124,18 +130,27 @@ async def assert_capture_references_valid(
     session: AsyncSession,
     company_id: uuid.UUID,
     ref_ids: dict[str, uuid.UUID | None],
+    *,
+    required_slots: tuple[str, ...] = (),
 ) -> dict[str, dict]:
     """Validate the references linked to a capture. Raise AppError if any is
     expired/retired (ISO 17025: cannot analyse with an out-of-date reference).
-    Returns a provenance dict {slot: {id, kind, code, validity}} for usable ones.
-    Slots with no reference are simply omitted (soft — flagged as a warning)."""
+    Returns a provenance dict {slot: {id, kind, code, validity}} for usable ones."""
     provenance: dict[str, dict] = {}
     blocked: list[str] = []
+
+    missing = [slot for slot in required_slots if ref_ids.get(slot) is None]
+    if missing:
+        blocked.append("mancanti=" + ",".join(missing))
+
     for slot, rid in ref_ids.items():
         if rid is None:
             continue
         ref = await get_reference(session, company_id, rid)
         v = compute_validity(ref)
+        expected_kind = SLOT_KINDS.get(slot)
+        if expected_kind is not None and ref.kind != expected_kind:
+            blocked.append(f"{slot}={ref.code} (tipo {ref.kind}, atteso {expected_kind})")
         if v in ("expired", "retired"):
             blocked.append(f"{slot}={ref.code} ({v})")
         provenance[slot] = {
@@ -146,7 +161,7 @@ async def assert_capture_references_valid(
         }
     if blocked:
         raise AppError(
-            "Riferimenti non validi (scaduti/dismessi): " + "; ".join(blocked),
+            "Kit hardware/taratura non valido: " + "; ".join(blocked),
             code="reference_invalid",
         )
     return provenance

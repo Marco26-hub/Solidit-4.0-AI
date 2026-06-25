@@ -280,6 +280,35 @@ async def test_spectral_estimate_not_written_into_report_payload(client, require
             headers=h,
         )
     ).json()
+    import datetime as dt
+
+    future = (dt.date.today() + dt.timedelta(days=365)).isoformat()
+    lb = (
+        await client.post(
+            "/api/v1/calibration-references",
+            json={"kind": "lightbox", "code": "LB-SP", "valid_until": future},
+            headers=h,
+        )
+    ).json()
+    gs = (
+        await client.post(
+            "/api/v1/calibration-references",
+            json={"kind": "grey_scale", "code": "GS-SP", "valid_until": future},
+            headers=h,
+        )
+    ).json()
+    wt = (
+        await client.post(
+            "/api/v1/calibration-references",
+            json={
+                "kind": "white_tile",
+                "code": "WT-SP",
+                "reference_values": {"L": 95.0, "a": 0.0, "b": 0.0},
+                "valid_until": future,
+            },
+            headers=h,
+        )
+    ).json()
     cs = (
         await client.post(
             "/api/v1/capture-sessions",
@@ -288,6 +317,9 @@ async def test_spectral_estimate_not_written_into_report_payload(client, require
                 "batch_id": batch["id"],
                 "test_method_code": "ISO_105_X12",
                 "capture_type": "multifiber_after",
+                "lightbox_ref_id": lb["id"],
+                "grey_scale_ref_id": gs["id"],
+                "white_tile_ref_id": wt["id"],
             },
             headers=h,
         )
