@@ -3,6 +3,17 @@
 > Template interni da copiare, compilare, firmare e archiviare nel sistema di
 > gestione del laboratorio. I campi compilati devono riflettere dati reali.
 
+Versione PDF compilabile:
+
+- `../../output/pdf/accredia/Solidita_Accredia_Moduli_Compilabili.pdf`
+- moduli singoli in `../../output/pdf/accredia/`
+
+Rigenerazione:
+
+```bash
+python3 scripts/generate_accredia_fillable_pdfs.py
+```
+
 ## MOD-01 — Piano validazione metodo
 
 | Campo | Valore |
@@ -160,4 +171,3 @@
 | Profili grading bloccati |  |
 | Report di validazione collegato |  |
 | Manuale e SOP revisionati |  |
-

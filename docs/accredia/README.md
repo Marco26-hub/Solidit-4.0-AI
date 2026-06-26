@@ -23,6 +23,26 @@ di accreditamento dichiarato.
 | `PROCEDURA_DOMANDA_ACCREDIA.md` | Sequenza operativa per preparare domanda o estensione dello scopo |
 | `MODULI_OPERATIVI.md` | Template compilabili per validazione, incertezza, audit, rischi e riesame |
 
+## PDF compilabili
+
+I moduli operativi sono disponibili anche come PDF A4 con campi AcroForm
+scrivibili:
+
+- `../../output/pdf/accredia/Solidita_Accredia_Moduli_Compilabili.pdf`
+- `../../output/pdf/accredia/MOD-01_piano_validazione_metodo_compilabile.pdf`
+- `../../output/pdf/accredia/MOD-02_rapporto_validazione_metodo_compilabile.pdf`
+- `../../output/pdf/accredia/MOD-03_budget_incertezza_compilabile.pdf`
+- `../../output/pdf/accredia/MOD-04_registro_rischi_e_imparzialita_compilabile.pdf`
+- `../../output/pdf/accredia/MOD-05_checklist_audit_interno_compilabile.pdf`
+- `../../output/pdf/accredia/MOD-06_verbale_riesame_direzione_compilabile.pdf`
+- `../../output/pdf/accredia/MOD-07_checklist_freeze_release_accreditabile_compilabile.pdf`
+
+Rigenerazione:
+
+```bash
+python3 scripts/generate_accredia_fillable_pdfs.py
+```
+
 ## Ordine di lavoro consigliato
 
 1. Definire lo scopo tecnico limitato della prova.
