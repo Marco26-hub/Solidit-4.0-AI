@@ -72,7 +72,7 @@ export function BatchZeroPage() {
       />
 
       <PageGuide
-        defaultOpen={(batches.data?.length ?? 0) === 0}
+        defaultOpen={batches.isSuccess && batches.data.length === 0}
         steps={[
           <>La <b>striscia multifibra di riferimento</b> ("batch zero") è la striscia NON trattata: il colore pulito di partenza con cui si confronta la macchia. Registrala <b>prima</b> della prima prova di macchia.</>,
           <>Scegli lo <b>standard della striscia</b> (es. ISO 105-F10 DW): decide quali fibre contiene e in che ordine.</>,

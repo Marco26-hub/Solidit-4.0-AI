@@ -70,7 +70,7 @@ export function ArticlesPage() {
       />
 
       <PageGuide
-        defaultOpen={(articles.data?.length ?? 0) === 0}
+        defaultOpen={articles.isSuccess && articles.data.length === 0}
         steps={[
           <>L'<b>articolo</b> è il tessuto in produzione (es. "Popeline 120"); la <b>variante</b> è il suo colore/lotto (es. "blu navy L-2026-14").</>,
           <>Registra la variante con il suo <b>Lab di riferimento</b>: è il colore giusto approvato, quello con cui confrontare il campione dopo la prova.</>,

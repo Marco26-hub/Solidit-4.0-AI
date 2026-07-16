@@ -43,7 +43,7 @@ export function MethodsPage() {
       />
 
       <PageGuide
-        defaultOpen={(docs.data?.length ?? 0) === 0}
+        defaultOpen={docs.isSuccess && docs.data.length === 0}
         steps={[
           <>Il catalogo dei metodi è già caricato: non devi creare nulla. Il metodo (la "norma") lo sceglierai quando crei una prova.</>,
           <>Se la tua azienda possiede la copia licenziata di una norma, allegala al metodo con "Carica norma" (PDF): resta privata, solo per il tuo team.</>,

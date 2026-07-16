@@ -63,7 +63,7 @@ export function LedgerPage() {
     <div className="space-y-4">
       <PageHeader title="Registro report" subtitle="Report digitali con sigillo di integrità SHA-256" />
       <PageGuide
-        defaultOpen={(reports.data?.length ?? 0) === 0}
+        defaultOpen={reports.isSuccess && reports.data.length === 0}
         steps={[
           <>Qui trovi tutti i report emessi. Il report si <b>genera dalla prova</b> (pagina Prove, dopo aver salvato il risultato).</>,
           <><b>Verifica</b>: ricontrolla il sigillo d'integrità — conferma che il documento non è stato alterato.</>,

@@ -101,7 +101,7 @@ export function TestJobsPage() {
     <div className="space-y-6">
       <PageHeader title="Prove" subtitle="Prove, risultati manuali e report" />
       <PageGuide
-        defaultOpen={(jobs.data?.length ?? 0) === 0}
+        defaultOpen={jobs.isSuccess && jobs.data.length === 0}
         steps={[
           <><b>Crea la prova</b>: scegli il metodo (la norma, es. "ISO 105-E04 sudore"). Capitolato e articolo sono facoltativi ma danno il verdetto automatico.</>,
           <>Esegui la prova fisica in laboratorio (lavaggio, sudore, ecc.) come da norma.</>,

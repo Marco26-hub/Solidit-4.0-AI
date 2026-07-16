@@ -42,7 +42,7 @@ export function ValidationPage() {
         subtitle="Campagne di confronto del software vs riferimento (spettrofotometro / valutazione esperta / laboratorio esterno). È il documento di credibilità per l'accreditamento ISO/IEC 17025."
       />
       <PageGuide
-        defaultOpen={(runs.data?.length ?? 0) === 0}
+        defaultOpen={runs.isSuccess && runs.data.length === 0}
         steps={[
           <>Qui dimostri che il sistema dà gli stessi risultati del laboratorio: è la base dell'accreditamento.</>,
           <>Crea una <b>campagna</b>, poi aggiungi campioni: per ognuno inserisci il <b>grado del software</b> e il <b>grado del riferimento</b> (spettrofotometro o valutatore esperto).</>,

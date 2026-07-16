@@ -69,7 +69,7 @@ export function TeamPage() {
         subtitle="Account e ruoli: l'operatore esegue, il responsabile approva"
       />
       <PageGuide
-        defaultOpen={(members.data?.length ?? 0) <= 1}
+        defaultOpen={members.isSuccess && members.data.length <= 1}
         steps={[
           <>Crea un account per ogni persona del laboratorio: ogni risultato resta legato a chi l'ha fatto (richiesto in ottica ISO 17025).</>,
           <><b>Operatore</b> = esegue prove, foto e risultati. <b>Manager</b> = come l'operatore, più approva/finalizza i report e gestisce capitolati, batch e tarature. <b>Amministratore</b> = tutto, più il team.</>,

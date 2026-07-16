@@ -1,8 +1,10 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 // Plain-language, step-by-step guide for the inexperienced operator.
 // Collapsible so experts aren't cluttered; pass defaultOpen (e.g. when the
-// page's main list is still empty) to open it for first-time users.
+// page's main list is CONFIRMED empty — gate it on query.isSuccess, otherwise
+// the guide flashes open during loading and snaps shut when data arrives).
+// Once the user toggles it manually, their choice wins over defaultOpen.
 export function PageGuide({
   steps,
   defaultOpen = false,
@@ -12,9 +14,15 @@ export function PageGuide({
   defaultOpen?: boolean;
   title?: string;
 }) {
+  const [userOpen, setUserOpen] = useState<boolean | null>(null);
+  const open = userOpen ?? defaultOpen;
   return (
     <details
-      open={defaultOpen}
+      open={open}
+      onToggle={(e) => {
+        const v = e.currentTarget.open;
+        if (v !== open) setUserOpen(v); // manual toggle → pin the user's choice
+      }}
       className="mb-4 rounded-xl border border-brand-200 bg-brand-50/60 px-4 py-1"
     >
       <summary className="cursor-pointer select-none py-2 text-sm font-medium text-brand-700">

@@ -125,7 +125,7 @@ export function BrandSpecsPage() {
     <div className="space-y-6">
       <PageHeader title="Capitolati brand" subtitle="Capitolati brand e regole di accettazione" />
       <PageGuide
-        defaultOpen={(specs.data?.length ?? 0) === 0}
+        defaultOpen={specs.isSuccess && specs.data.length === 0}
         steps={[
           <>Crea il capitolato del tuo cliente (es. "Zara"): è l'insieme delle sue tolleranze.</>,
           <>Aggiungi le regole: per ogni metodo di prova indica il <b>grado minimo</b> accettato (scala 1–5, dove 5 = nessuna differenza) e/o il <b>ΔE massimo</b> (differenza di colore: più basso = più simile).</>,
