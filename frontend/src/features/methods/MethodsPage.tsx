@@ -87,6 +87,8 @@ function MethodRow({ method, hasDoc }: { method: TestMethod; hasDoc: boolean }) 
         <div className="text-xs text-steel">
           {method.code} · {method.category}
         </div>
+        {/* no silent failure: surface upload/download errors on the row */}
+        <ErrorText error={upload.error || download.error} />
       </div>
       <div className="flex items-center gap-2">
         {hasDoc ? <Badge kind="pass">copia allegata</Badge> : <Badge kind="muted">da allegare</Badge>}

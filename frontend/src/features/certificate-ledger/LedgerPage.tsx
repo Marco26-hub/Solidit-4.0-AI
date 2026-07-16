@@ -10,6 +10,7 @@ export function LedgerPage() {
   const reports = useQuery({ queryKey: ["reports"], queryFn: listReports });
   const [verified, setVerified] = useState<Record<string, ReportVerify>>({});
   const [busy, setBusy] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<unknown>(null);
 
   const finalize = useMutation({
     mutationFn: (id: string) => finalizeReport(id),
@@ -18,24 +19,32 @@ export function LedgerPage() {
 
   async function verify(id: string) {
     setBusy(id);
+    setActionError(null);
     try {
       const v = await verifyReport(id);
       setVerified((m) => ({ ...m, [id]: v }));
     } catch (e) {
       console.error("verifyReport failed", e);
+      setActionError(e); // no silent failure: surface it to the operator
     } finally {
       setBusy(null);
     }
   }
 
   async function download(id: string, name: string) {
-    const blob = await downloadReport(id);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${name}.pdf`;
-    a.click();
-    URL.revokeObjectURL(url);
+    setActionError(null);
+    try {
+      const blob = await downloadReport(id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${name}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("downloadReport failed", e);
+      setActionError(e); // no silent failure: surface it to the operator
+    }
   }
 
   function onFinalize(id: string, number: string) {
@@ -57,6 +66,7 @@ export function LedgerPage() {
           <b>Scarica PDF</b> = il documento da inviare.
         </p>
         <ErrorText error={reports.error} />
+        <ErrorText error={finalize.error || actionError} />
         <div className="overflow-x-auto">
         <table className="w-full min-w-[480px] text-sm">
           <thead className="text-left text-steel">
