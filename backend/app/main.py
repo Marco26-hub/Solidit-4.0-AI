@@ -41,6 +41,10 @@ app = FastAPI(
         "Digital textile quality control, traceability, pre-validation and "
         "standardization platform (Trace core)."
     ),
+    # info-disclosure hardening: no interactive API docs in production
+    docs_url=None if settings.is_production else "/docs",
+    redoc_url=None if settings.is_production else "/redoc",
+    openapi_url=None if settings.is_production else "/openapi.json",
 )
 
 app.add_middleware(
