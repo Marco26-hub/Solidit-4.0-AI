@@ -81,7 +81,9 @@ async def submit_manual_result(
     principal: Principal = Depends(_OPERATE),
     session: AsyncSession = Depends(get_db),
 ) -> MeasurementResultOut:
-    job, result = await service.submit_manual_result(session, principal.company_id, job_id, payload)
+    job, result = await service.submit_manual_result(
+        session, principal.company_id, job_id, payload, operator_user_id=principal.user_id
+    )
     await record_audit(
         session,
         action="test_job.manual_result",

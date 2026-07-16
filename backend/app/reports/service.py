@@ -90,8 +90,21 @@ async def generate_report(
     res = result.results or {}
     vision = res.get("vision", {}) if isinstance(res, dict) else {}
     qflags = vision.get("quality_flags", {}) if isinstance(vision, dict) else {}
+    # ISO 17025 §6.2: the operator who produced the result, with authorisation status
+    operator_info = res.get("operator") if isinstance(res, dict) else None
+    operator_email = None
+    if result.operator_user_id is not None:
+        from app.db.models import User
+
+        u = (
+            await session.execute(select(User).where(User.id == result.operator_user_id))
+        ).scalar_one_or_none()
+        operator_email = u.email if u else None
+
     provenance = {
         "algorithm_version": result.algorithm_version,
+        "operator_email": operator_email,
+        "operator_authorized": (operator_info or {}).get("authorized"),
         "source": res.get("source", "manual"),
         "assessment_type": res.get("assessment_type"),
         "references": res.get("references", {}),

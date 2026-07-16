@@ -87,7 +87,9 @@ async def analyze(
     principal: Principal = Depends(_OPERATE),
     session: AsyncSession = Depends(get_db),
 ) -> MeasurementResultOut:
-    result = await service.analyze(session, principal.company_id, session_id)
+    result = await service.analyze(
+        session, principal.company_id, session_id, operator_user_id=principal.user_id
+    )
     await record_audit(
         session,
         action="capture.analyze",

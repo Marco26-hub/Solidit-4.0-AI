@@ -178,6 +178,7 @@ async def submit_manual_result(
     company_id: uuid.UUID,
     job_id: uuid.UUID,
     data: ManualResultCreate,
+    operator_user_id: uuid.UUID | None = None,
 ) -> tuple[TestJob, MeasurementResult]:
     job = await get_test_job(session, company_id, job_id)
 
@@ -188,11 +189,29 @@ async def submit_manual_result(
     fibers = {k: v.model_dump() for k, v in data.fibers.items()}
     verdict = evaluate_pass_fail(rules, data.test_method_code, fibers)
 
+    results_payload: dict = {
+        "test_method_code": data.test_method_code,
+        "fibers": fibers,
+        "notes": data.notes,
+    }
+    if operator_user_id is not None:
+        # ISO 17025 §6.2: result traceable to the operator + authorisation status
+        from app.companies.service import check_operator_authorization
+
+        ok, detail = await check_operator_authorization(
+            session, company_id, operator_user_id, data.test_method_code
+        )
+        results_payload["operator"] = {
+            "user_id": str(operator_user_id),
+            "authorized": ok,
+            "detail": detail,
+        }
     result = MeasurementResult(
         company_id=company_id,
         test_job_id=job.id,
+        operator_user_id=operator_user_id,
         algorithm_version=MANUAL_ALGO_VERSION,
-        results={"test_method_code": data.test_method_code, "fibers": fibers, "notes": data.notes},
+        results=results_payload,
         pass_fail=verdict,
     )
     session.add(result)

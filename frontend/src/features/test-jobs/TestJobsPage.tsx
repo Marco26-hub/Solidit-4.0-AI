@@ -22,6 +22,7 @@ import { SpectralCurveViewer } from "@/features/spectral/SpectralCurveViewer";
 import { MethodSelect } from "@/components/MethodSelect";
 import { PageGuide } from "@/components/PageGuide";
 import { PhotoInput } from "@/components/PhotoInput";
+import { useRole } from "@/lib/roles";
 import { fibersForMethod } from "@/lib/fibers";
 import {
   Badge,
@@ -264,6 +265,7 @@ function JobPanel({
   hasVariant: boolean;
 }) {
   const qc = useQueryClient();
+  const { canManage } = useRole();
   const methods = useQuery({ queryKey: ["test-methods"], queryFn: listTestMethods });
   const profiles = useQuery({ queryKey: ["strip-profiles"], queryFn: listStripProfiles });
   const results = useQuery({ queryKey: ["results", jobId], queryFn: () => getResults(jobId) });
@@ -475,15 +477,22 @@ function JobPanel({
         <Button loading={submit.isPending} disabled={!methodCode} onClick={() => submit.mutate()}>
           Salva risultato
         </Button>
-        <Button
-          variant={hasResult ? "primary" : "ghost"}
-          loading={report.isPending}
-          disabled={!hasResult}
-          onClick={() => report.mutate()}
-        >
-          Genera report
-        </Button>
+        {canManage && (
+          <Button
+            variant={hasResult ? "primary" : "ghost"}
+            loading={report.isPending}
+            disabled={!hasResult}
+            onClick={() => report.mutate()}
+          >
+            Genera report
+          </Button>
+        )}
       </div>
+      {!canManage && hasResult && (
+        <Hint>
+          Risultato salvato. Il report lo genera e approva il responsabile (manager/amministratore).
+        </Hint>
+      )}
       {!hasResult && <Hint>Salva prima un risultato per poter generare il report.</Hint>}
       {submit.isSuccess && hasResult && !reportNo && (
         <p className="mt-2 text-xs text-emerald-700">Risultato salvato — ora puoi Generare report.</p>

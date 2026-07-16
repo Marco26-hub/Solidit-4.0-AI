@@ -8,7 +8,7 @@ from app.db.models.billing import Subscription
 from app.db.models.brand import BrandAcceptanceRule, BrandSpecification
 from app.db.models.calibration import CalibrationReference
 from app.db.models.capture import CaptureSession, ImageAsset
-from app.db.models.company import Company, CompanyMembership, Department
+from app.db.models.company import Company, CompanyMembership, Department, OperatorAuthorization
 from app.db.models.device import Device
 from app.db.models.method_document import MethodDocument
 from app.db.models.proficiency import ProficiencyTest
@@ -27,6 +27,7 @@ __all__ = [
     "CaptureSession",
     "Company",
     "CompanyMembership",
+    "OperatorAuthorization",
     "Department",
     "Device",
     "GradingProfile",

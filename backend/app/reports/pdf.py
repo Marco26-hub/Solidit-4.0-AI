@@ -155,6 +155,17 @@ def build_report_pdf(payload: dict[str, Any], sha256_hash: str, verify_url: str)
             small,
         )
     )
+    _op_auth = prov.get("operator_authorized")
+    _auth_txt = (
+        "autorizzato" if _op_auth is True else ("NON autorizzato" if _op_auth is False else "n/d")
+    )
+    story.append(
+        Paragraph(
+            f"Operatore: {prov.get('operator_email') or 'n/d'} · autorizzazione al metodo "
+            f"(ISO 17025 §6.2): {_auth_txt}",
+            small,
+        )
+    )
     refs = prov.get("references", {}) or {}
     if refs:
         ref_txt = " · ".join(

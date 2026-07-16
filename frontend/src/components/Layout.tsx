@@ -34,13 +34,19 @@ const SECONDARY: NavItem[] = [
   ...NAV.filter((n) => !PRIMARY_PATHS.has(n.to)),
   { to: "/billing", label: "Abbonamento", icon: "tag" },
 ];
+// Visible to admin + lab_manager only (the API denies operators anyway).
+const TEAM_ITEM: NavItem = { to: "/team", label: "Team", icon: "device" };
 
 export function Layout() {
   const { profile, logout } = useAuth();
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
 
-  const moreActive = SECONDARY.some((n) => location.pathname.startsWith(n.to));
+  const canSeeTeam = profile?.role === "company_admin" || profile?.role === "lab_manager";
+  const nav = canSeeTeam ? [...NAV, TEAM_ITEM] : NAV;
+  const secondary = canSeeTeam ? [...SECONDARY, TEAM_ITEM] : SECONDARY;
+
+  const moreActive = secondary.some((n) => location.pathname.startsWith(n.to));
 
   return (
     <div className="min-h-screen bg-slate-100 text-ink">
@@ -83,7 +89,7 @@ export function Layout() {
         {/* desktop sidebar */}
         <aside className="hidden w-60 shrink-0 border-r border-slate-200 bg-white p-3 md:block">
           <nav className="space-y-1">
-            {NAV.map((n) => (
+            {nav.map((n) => (
               <NavLink
                 key={n.to}
                 to={n.to}
@@ -115,7 +121,7 @@ export function Layout() {
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-slate-300" />
             <div className="mb-3 text-sm font-semibold text-ink">Altro — impostazioni e anagrafiche</div>
             <div className="grid grid-cols-3 gap-2">
-              {SECONDARY.map((n) => (
+              {secondary.map((n) => (
                 <NavLink
                   key={n.to}
                   to={n.to}

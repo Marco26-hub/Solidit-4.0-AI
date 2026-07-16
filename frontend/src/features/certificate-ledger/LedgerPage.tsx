@@ -4,10 +4,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { downloadReport, finalizeReport, listReports, verifyReport } from "@/api/quality";
 import type { ReportVerify } from "@/api/types";
 import { PageGuide } from "@/components/PageGuide";
+import { useRole } from "@/lib/roles";
 import { Badge, Button, Card, ErrorText, PageHeader } from "@/components/ui";
 
 export function LedgerPage() {
   const qc = useQueryClient();
+  const { canManage } = useRole();
   const reports = useQuery({ queryKey: ["reports"], queryFn: listReports });
   const [verified, setVerified] = useState<Record<string, ReportVerify>>({});
   const [busy, setBusy] = useState<string | null>(null);
@@ -111,7 +113,7 @@ export function LedgerPage() {
                   </td>
                   <td className="text-right">
                     <div className="flex flex-wrap justify-end gap-2">
-                      {r.status !== "locked" && (
+                      {r.status !== "locked" && canManage && (
                         <Button
                           variant="ghost"
                           loading={finalize.isPending}

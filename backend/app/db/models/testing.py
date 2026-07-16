@@ -79,6 +79,10 @@ class MeasurementResult(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
     # FK to capture_sessions is enforced in the DB (migration 0001); no ORM model
     # for capture_sessions yet (Sprint 3 / Vision), so keep this column FK-free here.
     capture_session_id: Mapped[uuid.UUID | None] = mapped_column(PGUUID(as_uuid=True))
+    # ISO 17025 §6.2: every result is traceable to the operator who produced it
+    operator_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
+    )
     algorithm_version: Mapped[str] = mapped_column(Text, nullable=False)
     results: Mapped[dict] = mapped_column(JSONB, nullable=False)
     pass_fail: Mapped[dict] = mapped_column(

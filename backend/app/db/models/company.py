@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import uuid
+from datetime import date, datetime
 
-from sqlalchemy import ForeignKey, Text, UniqueConstraint, text
+from sqlalchemy import TIMESTAMP, Date, ForeignKey, Text, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -43,6 +44,39 @@ class CompanyMembership(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     role: Mapped[str] = mapped_column(Text, nullable=False)
     permissions: Mapped[dict] = mapped_column(
         JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+
+
+class OperatorAuthorization(UUIDPrimaryKeyMixin, Base):
+    """ISO/IEC 17025 §6.2 personnel register: who is authorised to run which test
+    method (NULL = all), by whom, from/until when, with training evidence."""
+
+    __tablename__ = "operator_authorizations"
+
+    company_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("companies.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    method_code: Mapped[str | None] = mapped_column(Text)  # NULL = all methods
+    authorized_by: Mapped[uuid.UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
+    )
+    valid_from: Mapped[date] = mapped_column(
+        Date, nullable=False, server_default=text("CURRENT_DATE")
+    )
+    valid_until: Mapped[date | None] = mapped_column(Date)
+    training_notes: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(Text, nullable=False, server_default="active")
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, server_default=text("now()")
     )
 
 

@@ -15,6 +15,7 @@ import { ColorimetryPage } from "@/features/colorimetry/ColorimetryPage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { DevicesPage } from "@/features/devices/DevicesPage";
 import { MethodsPage } from "@/features/methods/MethodsPage";
+import { TeamPage } from "@/features/team/TeamPage";
 import { SpectralLabPage } from "@/features/spectral/SpectralLabPage";
 import { ValidationPage } from "@/features/validation/ValidationPage";
 import { VerifyPage } from "@/features/verify/VerifyPage";
@@ -45,6 +46,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                 <Route path="/billing" element={<BillingPage />} />
                 <Route path="/ledger" element={<LedgerPage />} />
                 <Route path="/devices" element={<DevicesPage />} />
+                <Route path="/team" element={<TeamPage />} />
               </Route>
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

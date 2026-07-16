@@ -38,6 +38,7 @@ def _build_readiness_items(
     locked_reports_count: int,
     pt_ok_count: int,
     pt_total: int,
+    active_authorizations: int = 0,
 ) -> list[dict[str, str]]:
     return [
         _item(
@@ -111,7 +112,14 @@ def _build_readiness_items(
             "todo",
             "sostituire ESEMPIO",
         ),
-        _item("operators", "Operatori formati e qualificati", "todo", "registro formazione"),
+        _item(
+            "operators",
+            "Operatori autorizzati ai metodi (registro §6.2)",
+            "done" if active_authorizations > 0 else "todo",
+            f"{active_authorizations} autorizzazioni attive"
+            if active_authorizations
+            else "nessuna autorizzazione registrata (pagina Team)",
+        ),
         _item("consultant", "Revisione consulente ISO/IEC 17025", "todo", "esterno"),
         _item("scope", "Metodo incluso nello scopo Accredia", "todo", "iter accreditamento"),
     ]
@@ -139,6 +147,19 @@ async def readiness(session: AsyncSession, company_id: uuid.UUID) -> dict:
         .all()
     )
     valid_refs = [r for r in refs if compute_validity(r) in ("valid", "expiring")]
+
+    from app.db.models import OperatorAuthorization
+
+    active_auths = (
+        await session.execute(
+            select(func.count())
+            .select_from(OperatorAuthorization)
+            .where(
+                OperatorAuthorization.company_id == company_id,
+                OperatorAuthorization.status == "active",
+            )
+        )
+    ).scalar_one()
 
     method_docs = (
         await session.execute(
@@ -169,6 +190,7 @@ async def readiness(session: AsyncSession, company_id: uuid.UUID) -> dict:
 
     items = _build_readiness_items(
         valid_refs_count=len(valid_refs),
+        active_authorizations=int(active_auths),
         method_docs_count=method_docs,
         total_scored=total_scored,
         best_pct=best_pct,

@@ -573,12 +573,42 @@ async def _analyze_colour_change(
 
 
 async def analyze(
-    session: AsyncSession, company_id: uuid.UUID, session_id: uuid.UUID
+    session: AsyncSession,
+    company_id: uuid.UUID,
+    session_id: uuid.UUID,
+    operator_user_id: uuid.UUID | None = None,
 ) -> MeasurementResult:
     cs = await get_session(session, company_id, session_id)
     if not cs.test_method_code:
         raise AppError("Sessione senza metodo (solidità).", code="no_method")
 
     if cs.capture_type in _COLOUR_CHANGE_TYPES:
-        return await _analyze_colour_change(session, company_id, cs)
-    return await _analyze_staining(session, company_id, cs)
+        result = await _analyze_colour_change(session, company_id, cs)
+    else:
+        result = await _analyze_staining(session, company_id, cs)
+
+    # ISO 17025 §6.2: bind the result to the operator and record whether they
+    # hold a registered authorisation for the method. Missing authorisation is a
+    # FLAGGED warning (rule 6); in strict mode the capture is refused upfront.
+    operator = operator_user_id or cs.operator_id
+    result.operator_user_id = operator
+    if operator is not None:
+        from app.companies.service import check_operator_authorization
+
+        ok, detail = await check_operator_authorization(
+            session, company_id, operator, cs.test_method_code
+        )
+        res = dict(result.results or {})
+        res["operator"] = {"user_id": str(operator), "authorized": ok, "detail": detail}
+        if not ok:
+            vision = res.get("vision")
+            if isinstance(vision, dict):
+                vision["warnings"] = [*vision.get("warnings", []), detail]
+            if (cs.telemetry or {}).get("strict_quality"):
+                raise AppError(
+                    f"Analisi rifiutata (modalità severa): {detail}",
+                    code="operator_not_authorized",
+                )
+        result.results = res
+        await session.flush()
+    return result
