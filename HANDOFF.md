@@ -1,6 +1,6 @@
 # HANDOFF.md — Solidità 4.0 Project Handoff
 
-> Aggiornato: 2026-06-11 · Repo: https://github.com/Marco26-hub/Solidit-4.0-AI
+> Aggiornato: 2026-07-16 · Repo: https://github.com/Marco26-hub/Solidit-4.0-AI
 
 ## Contesto
 
@@ -17,7 +17,13 @@ come sostituto di un laboratorio accreditato né come "spettrofotometro".
 Monorepo attivo: `backend/` (FastAPI, Python 3.12) · `frontend/` (React+Vite+TS)
 · `mobile/` (skeleton RN) · `infra/` (docker-compose Postgres 16 + Redis).
 
-**62 test backend verdi · ruff pulito · build frontend pulito.**
+**Stato verificato 2026-07-16:** repo pulito e allineato a `origin/main`
+(`54a6e26`) · backend live `https://solidita-backend.onrender.com/healthz` OK ·
+frontend live `https://solidit-4-0-ai.vercel.app` HTTP 200 · `/docs` e
+`/openapi.json` disabilitati in produzione (404) · ruff pulito · build frontend
+pulito · typecheck mobile pulito. Test backend locali: 71 passati + 47 saltati
+per PostgreSQL locale non avviato; rieseguire con Postgres/Neon raggiungibile
+prima di una release tecnica.
 
 ### Implementato (Trace + Vision base + fondamenta accreditamento)
 
@@ -91,17 +97,27 @@ Monorepo attivo: `backend/` (FastAPI, Python 3.12) · `frontend/` (React+Vite+TS
   (fibre auto da norma, fotocamera/webcam + upload, vision staining +
   colour-change, riferimenti strumenti, toggle in-frame grey-scale e strict),
   Norme (catalogo + upload norma), Report ledger (verifica/finalizza/PDF),
-  Device (+ registro tarature). Silent token refresh.
+  Device (+ registro tarature), Team. Silent token refresh.
+- **Team, ruoli e competenza operatori (ISO 17025 §6.2)**: gestione membri
+  reali per azienda, ruoli `operator` / `lab_manager` / `company_admin`,
+  registro autorizzazioni operatore-metodo con validità temporale, blocco/warning
+  su risultato se operatore non autorizzato, tracciamento `operator_user_id` nei
+  risultati e provenienza operatore nel report PDF.
 - **Validazione & accreditamento (dentro il software, auto-aggiornante)**:
   modulo `/validation` (campagne software-vs-riferimento + statistiche) +
   **report PDF di validazione** (`GET /validation-runs/{id}/report`) +
   **prove interlaboratorio/PT** `/proficiency-tests` (registra round, calcola
   **z-score** = (x−X)/σ e **En** number, esito soddisfacente/discutibile/non
   soddisfacente — requisito ISO 17025 7.7.2; il circuito è del provider esterno) +
-  **checklist accreditabilità** `GET /accreditation/readiness` (13 item calcolati
-  live: campagne+%entro±0.5, riferimenti validi, norme caricate, report bloccati,
-  PT soddisfacente, + item off-software incertezza/grading-validato/operatori/
-  consulente/scopo Accredia) con livello maturità.
+  **checklist accreditabilità** `GET /accreditation/readiness` (item calcolati
+  live: dossier qualità, matrice evidenze, hardware gate, campagne+%entro±0.5,
+  riferimenti validi, norme caricate, report bloccati, PT soddisfacente, + item
+  off-software budget reale/grading validato/operatori/consulente/scopo Accredia)
+  con livello maturità.
+- **Dossier Accredia operativo**: manuale qualità, validazione ingegneristica,
+  matrice requisiti-evidenze, procedura domanda e moduli operativi. Disponibili
+  PDF A4 compilabili AcroForm in `output/pdf/accredia/` (bundle +
+  MOD-01→MOD-07) generati da `scripts/generate_accredia_fillable_pdfs.py`.
 - **Verifica pubblica report**: QR del PDF → pagina pubblica `/verify/:id?h=<sha>`
   (no login) valido/non-valido; mirror RLS `report_verifications` (public read).
 - **Correzione colore certificata**: piastrina/target con Lab certificato →
@@ -117,14 +133,15 @@ Monorepo attivo: `backend/` (FastAPI, Python 3.12) · `frontend/` (React+Vite+TS
 - **GDPR**: export/delete endpoint + template legali in `docs/legal/`.
 - **Deploy**: `infra/Dockerfile.prod` (vision+storage), `render.yaml`,
   `infra/neon/setup_neon.sh`, storage **S3/R2** (`storage.py`, attivo con env).
-- **Migrazioni Alembic**: 0001→0015 (testa: `0015_proficiency_tests`).
+- **Migrazioni Alembic**: 0001→0016 (testa: `0016_operator_authorizations`).
 
 ### Migrazioni chiave
 `0001` schema completo+RLS · `0004` profili striscia · `0006` articoli+grading ·
 `0007` ISO 105 + method_documents · `0008` calibration references + blocco
 scadenze · `0009` report lock · `0010` validation samples · `0011` reference_values
 (Lab certificato) · `0012` AATCC/ASTM · `0013` report_verifications (verifica
-pubblica) · `0014` metodi cuoio · `0015` proficiency_tests (PT interlaboratorio).
+pubblica) · `0014` metodi cuoio · `0015` proficiency_tests (PT interlaboratorio) ·
+`0016` operator_authorizations + `measurement_results.operator_user_id`.
 
 ## Setup locale
 
@@ -134,7 +151,7 @@ cd backend && pip install -e ".[vision]"
 python -m alembic upgrade head
 uvicorn app.main:app --port 8000
 cd ../frontend && npm i && npm run dev   # VITE_API_BASE=http://localhost:8000
-pytest backend  # 69 verdi (serve Postgres)
+pytest backend  # 118 test definiti; quelli DB richiedono Postgres avviato
 ```
 
 Deploy: vedi **DEPLOY.md** (frontend su Vercel root=`frontend`; backend su
@@ -166,9 +183,13 @@ Neon API key · [ ] aggiornate env su Render · [ ] verificato login+analyze liv
 ## Cosa resta (in ordine)
 
 1. **Deploy live**:
-   - **Neon — FATTO**: progetto creato, ruolo non-superuser `solidita_app`, schema
-     **migrato a 0015** (35 tabelle, 28 con FORCE RLS, 42 metodi seedati, RLS
-     verificato). Host: `ep-empty-bonus-at8e09an…us-east-1.aws.neon.tech`, db `neondb`.
+   - **Live verificato 2026-07-16**: backend Render health OK, frontend Vercel 200,
+     API docs disabilitate in produzione.
+   - **Neon — FATTO da verificare a ogni migrazione**: progetto creato, ruolo
+     non-superuser `solidita_app`, schema precedentemente migrato e RLS verificato.
+     Head codice attuale: `0016_operator_authorizations`; verificare che Neon/live
+     sia alla stessa head dopo ogni deploy. Host:
+     `ep-empty-bonus-at8e09an…us-east-1.aws.neon.tech`, db `neondb`.
      **`DATABASE_URL` per il backend (asyncpg)**: usare l'**endpoint diretto**
      (NON `-pooler`, per le prepared statement) e **`?sslmode=require`** SENZA
      `channel_binding` (asyncpg lo rifiuta; `app/db/session.py` converte sslmode→ssl):
@@ -178,7 +199,7 @@ Neon API key · [ ] aggiornate env su Render · [ ] verificato login+analyze liv
      persistono (LocalStorage).
    - **Render**: backend via `render.yaml` (env: DATABASE_URL sopra, JWT_SECRET_KEY,
      CORS_ORIGINS, PUBLIC_BASE_URL, WEB_BASE_URL, APP_ENV=production, S3_*).
-     Le migrazioni sono già applicate; il preDeploy `alembic upgrade head` è no-op.
+     Rieseguire `alembic upgrade head` quando entra una nuova migrazione.
    - **Vercel**: frontend root=`frontend`, env `VITE_API_BASE`=URL backend Render.
 2. **Billing**: codice pronto — resta configurare account Stripe + price IDs
    (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_TRACE/VISION`) +
@@ -191,6 +212,8 @@ Neon API key · [ ] aggiornate env su Render · [ ] verificato login+analyze liv
    submit. Niente IAP (abbonamenti sul web).
 4. Hardening vision: marker ArUco + **omografia** (OpenCV), worker async per
    vision/PDF/email.
+5. Aggiornare automazione CI/CD: eseguire backend ruff+pytest con Postgres reale,
+   frontend build, mobile typecheck e rigenerazione PDF compilabili su release.
 
 ### Non-codice (bloccanti accreditamento — responsabilità business)
 - Campioni reali 30→50→100 + confronto spettrofotometro/lab.
