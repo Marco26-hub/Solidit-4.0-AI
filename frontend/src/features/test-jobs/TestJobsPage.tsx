@@ -20,6 +20,7 @@ import {
 import { estimateForResult } from "@/api/spectral";
 import { SpectralCurveViewer } from "@/features/spectral/SpectralCurveViewer";
 import { MethodSelect } from "@/components/MethodSelect";
+import { PageGuide } from "@/components/PageGuide";
 import { PhotoInput } from "@/components/PhotoInput";
 import { fibersForMethod } from "@/lib/fibers";
 import {
@@ -98,6 +99,16 @@ export function TestJobsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Prove" subtitle="Prove, risultati manuali e report" />
+      <PageGuide
+        defaultOpen={(jobs.data?.length ?? 0) === 0}
+        steps={[
+          <><b>Crea la prova</b>: scegli il metodo (la norma, es. "ISO 105-E04 sudore"). Capitolato e articolo sono facoltativi ma danno il verdetto automatico.</>,
+          <>Esegui la prova fisica in laboratorio (lavaggio, sudore, ecc.) come da norma.</>,
+          <><b>Fotografa la striscia</b> nella cabina luce con la dima: solo la striscia, dritta, senza ombre. Spunta le opzioni se usi scala grigi in-frame o marker ArUco.</>,
+          <>Premi <b>Analizza</b>: i valori ΔE e grado si precompilano da soli nel "Risultato della prova".</>,
+          <><b>Verifica tu</b> i valori proposti (sei tu il responsabile), correggi se serve, poi <b>salva</b> e <b>genera il report</b>.</>,
+        ]}
+      />
 
       <Card>
         <div className="mb-3 font-medium">Nuova prova</div>

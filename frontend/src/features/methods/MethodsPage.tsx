@@ -9,6 +9,7 @@ import {
 } from "@/api/quality";
 import type { TestMethod } from "@/api/types";
 import { groupRank, normGroup } from "@/components/MethodSelect";
+import { PageGuide } from "@/components/PageGuide";
 import { Badge, Button, Card, EmptyState, ErrorText, PageHeader } from "@/components/ui";
 
 export function MethodsPage() {
@@ -41,6 +42,14 @@ export function MethodsPage() {
         subtitle="Catalogo dei metodi di prova (UNI EN ISO 105, AATCC, ASTM, cuoio ISO/IULTCS). Allega la TUA copia licenziata della norma di riferimento per ogni metodo — il documento non viene distribuito da noi."
       />
 
+      <PageGuide
+        defaultOpen={(docs.data?.length ?? 0) === 0}
+        steps={[
+          <>Il catalogo dei metodi è già caricato: non devi creare nulla. Il metodo (la "norma") lo sceglierai quando crei una prova.</>,
+          <>Se la tua azienda possiede la copia licenziata di una norma, allegala al metodo con "Carica norma" (PDF): resta privata, solo per il tuo team.</>,
+          <>Badge "copia allegata" = i tuoi operatori possono consultare la norma direttamente da qui.</>,
+        ]}
+      />
       <ErrorText error={methods.error || docs.error} />
 
       {groups.map(([family, list]) => (

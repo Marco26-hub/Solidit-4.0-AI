@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import { listDevices } from "@/api/companies";
 import { listBatches, listBrandSpecs, listReports, listTestJobs } from "@/api/quality";
 import { Icon } from "@/components/icons";
-import { Button, Card, PageHeader, Stat } from "@/components/ui";
+import { Button, PageHeader, Stat } from "@/components/ui";
+import { GuidedPath } from "./GuidedPath";
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -20,37 +21,6 @@ export function DashboardPage() {
   const decided = passed + failed;
   const passRate = decided ? Math.round((passed / decided) * 100) : 0;
 
-  // "Prossimo passo": one prominent action based on what's still missing,
-  // visible until the first report exists.
-  const hasSpec = (specs.data?.length ?? 0) > 0;
-  const hasBatch = (batches.data ?? []).some((b) => b.status === "active");
-  const hasJob = all.length > 0;
-  const hasReport = (reports.data?.length ?? 0) > 0;
-  const ready = jobs.isSuccess && specs.isSuccess && batches.isSuccess && reports.isSuccess;
-  let next: { label: string; to: string; why: string } | null = null;
-  if (ready && !hasReport) {
-    if (!hasSpec)
-      next = {
-        label: "Crea il primo capitolato brand",
-        to: "/brand-specs",
-        why: "Le regole del capitolato decidono se una prova è conforme. Senza, la prova mostra i valori senza verdetto.",
-      };
-    else if (!hasBatch)
-      next = {
-        label: "Crea un Batch Zero",
-        to: "/batch-zero",
-        why: "La striscia multifibra di riferimento serve prima di una prova di macchia.",
-      };
-    else if (!hasJob)
-      next = { label: "Avvia la prima prova", to: "/test-jobs", why: "Tutto pronto: registra la prima prova." };
-    else
-      next = {
-        label: "Genera il primo report",
-        to: "/test-jobs",
-        why: "Hai una prova: apri la prova, salva il risultato e genera il report.",
-      };
-  }
-
   return (
     <div>
       <PageHeader title="Dashboard" subtitle="Indicatori del controllo qualità" />
@@ -59,17 +29,8 @@ export function DashboardPage() {
         <Icon name="clipboard" /> Avvia una nuova prova
       </Button>
 
-      {next && (
-        <Card className="mb-4 border-brand-200 bg-brand-50">
-          <div className="text-xs font-medium uppercase tracking-wide text-brand-600">
-            Prossimo passo
-          </div>
-          <p className="mt-1 text-sm text-steel">{next.why}</p>
-          <Link to={next.to} className="mt-3 inline-block">
-            <Button>{next.label} ›</Button>
-          </Link>
-        </Card>
-      )}
+      {/* the full quality path with live status — the novice operator's map */}
+      <GuidedPath />
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <Stat label="Prove totali" value={all.length} icon={<Icon name="clipboard" />} />

@@ -13,6 +13,7 @@ import {
   listValidationRuns,
 } from "@/api/quality";
 import { Badge, Button, Card, EmptyState, ErrorText, Field, PageHeader, TextInput } from "@/components/ui";
+import { PageGuide } from "@/components/PageGuide";
 
 export function ValidationPage() {
   const qc = useQueryClient();
@@ -39,6 +40,15 @@ export function ValidationPage() {
       <PageHeader
         title="Validazione metodo"
         subtitle="Campagne di confronto del software vs riferimento (spettrofotometro / valutazione esperta / laboratorio esterno). È il documento di credibilità per l'accreditamento ISO/IEC 17025."
+      />
+      <PageGuide
+        defaultOpen={(runs.data?.length ?? 0) === 0}
+        steps={[
+          <>Qui dimostri che il sistema dà gli stessi risultati del laboratorio: è la base dell'accreditamento.</>,
+          <>Crea una <b>campagna</b>, poi aggiungi campioni: per ognuno inserisci il <b>grado del software</b> e il <b>grado del riferimento</b> (spettrofotometro o valutatore esperto).</>,
+          <>Premi <b>Calcola</b>: le statistiche escono da sole. Obiettivo indicativo: <b>≥90% dei campioni entro ±0,5 gradi</b>.</>,
+          <>La checklist "readiness" in alto ti dice cosa manca ancora per il percorso Accredia.</>,
+        ]}
       />
 
       {readiness.data && (

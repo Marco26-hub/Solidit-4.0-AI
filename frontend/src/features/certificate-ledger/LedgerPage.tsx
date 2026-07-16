@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { downloadReport, finalizeReport, listReports, verifyReport } from "@/api/quality";
 import type { ReportVerify } from "@/api/types";
+import { PageGuide } from "@/components/PageGuide";
 import { Badge, Button, Card, ErrorText, PageHeader } from "@/components/ui";
 
 export function LedgerPage() {
@@ -59,6 +60,15 @@ export function LedgerPage() {
   return (
     <div className="space-y-4">
       <PageHeader title="Registro report" subtitle="Report digitali con sigillo di integrità SHA-256" />
+      <PageGuide
+        defaultOpen={(reports.data?.length ?? 0) === 0}
+        steps={[
+          <>Qui trovi tutti i report emessi. Il report si <b>genera dalla prova</b> (pagina Prove, dopo aver salvato il risultato).</>,
+          <><b>Verifica</b>: ricontrolla il sigillo d'integrità — conferma che il documento non è stato alterato.</>,
+          <><b>Finalizza</b>: rende il report definitivo e immutabile. Fallo solo quando il risultato è confermato: dopo non si può più rigenerare.</>,
+          <>Il <b>QR sul PDF</b> permette al tuo cliente di verificare l'autenticità da solo, senza login.</>,
+        ]}
+      />
       <Card>
         <p className="mb-3 text-xs text-steel">
           <b>Verifica integrità</b> = ricontrolla che il PDF non sia stato alterato.{" "}

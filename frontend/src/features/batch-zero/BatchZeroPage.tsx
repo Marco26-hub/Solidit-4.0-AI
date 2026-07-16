@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { createBatch, listBatches, listStripProfiles } from "@/api/quality";
 import type { LabValue } from "@/api/types";
+import { PageGuide } from "@/components/PageGuide";
 import {
   Badge,
   Button,
@@ -70,13 +71,15 @@ export function BatchZeroPage() {
         subtitle="Striscia multifibra di riferimento — valori Lab per fibra (lo standard sceglie le fibre)"
       />
 
-      <Card className="border-brand-200 bg-brand-50">
-        <p className="text-sm text-steel">
-          La <b>striscia multifibra di riferimento</b> è il colore "pulito" di partenza di ogni fibra:
-          serve per misurare la macchia nelle prove. Registrala <b>prima</b> di avviare una prova di
-          macchia.
-        </p>
-      </Card>
+      <PageGuide
+        defaultOpen={(batches.data?.length ?? 0) === 0}
+        steps={[
+          <>La <b>striscia multifibra di riferimento</b> ("batch zero") è la striscia NON trattata: il colore pulito di partenza con cui si confronta la macchia. Registrala <b>prima</b> della prima prova di macchia.</>,
+          <>Scegli lo <b>standard della striscia</b> (es. ISO 105-F10 DW): decide quali fibre contiene e in che ordine.</>,
+          <>Inserisci i valori <b>Lab</b> per fibra: sono le coordinate del colore (L = chiaro/scuro, a = verde↔rosso, b = blu↔giallo). Li trovi sul certificato del lotto, oppure misurali su striscia nuova.</>,
+          <>Un batch per lotto di strisce: quando apri una scatola nuova, registra un nuovo batch.</>,
+        ]}
+      />
 
       <Card>
         <div className="mb-2 font-medium">Batch registrati</div>

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { addVariant, createArticle, listArticles, listGradingProfiles } from "@/api/quality";
 import type { Article, LabValue } from "@/api/types";
+import { PageGuide } from "@/components/PageGuide";
 import {
   Badge,
   Button,
@@ -68,12 +69,15 @@ export function ArticlesPage() {
         subtitle="Campione di produzione (tintoria/stamperia). Ogni variante (colore/lotto) tiene il Lab di riferimento per la solidità del colore (colour-change)."
       />
 
-      <Card className="border-brand-200 bg-brand-50">
-        <p className="text-sm text-steel">
-          <b>Passo 1:</b> registra l'articolo e le sue varianti (con il Lab di riferimento). Poi crea
-          la striscia in <b>Batch Zero</b> e potrai avviare una <b>Prova</b>.
-        </p>
-      </Card>
+      <PageGuide
+        defaultOpen={(articles.data?.length ?? 0) === 0}
+        steps={[
+          <>L'<b>articolo</b> è il tessuto in produzione (es. "Popeline 120"); la <b>variante</b> è il suo colore/lotto (es. "blu navy L-2026-14").</>,
+          <>Registra la variante con il suo <b>Lab di riferimento</b>: è il colore giusto approvato, quello con cui confrontare il campione dopo la prova.</>,
+          <>Servono per la prova di <b>variazione colore</b> (colour-change): il sistema misura quanto il campione si è scostato dal riferimento.</>,
+          <>Per la prova di <b>macchia</b> invece serve la striscia in <b>Batch Zero</b>. Fatti entrambi, vai su <b>Prove</b>.</>,
+        ]}
+      />
 
       <Card>
         <div className="mb-2 font-medium">Articoli</div>

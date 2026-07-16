@@ -11,6 +11,7 @@ import {
 } from "@/api/quality";
 import type { AcceptanceRuleInput } from "@/api/types";
 import { MethodSelect } from "@/components/MethodSelect";
+import { PageGuide } from "@/components/PageGuide";
 import {
   Badge,
   Button,
@@ -123,6 +124,15 @@ export function BrandSpecsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Capitolati brand" subtitle="Capitolati brand e regole di accettazione" />
+      <PageGuide
+        defaultOpen={(specs.data?.length ?? 0) === 0}
+        steps={[
+          <>Crea il capitolato del tuo cliente (es. "Zara"): è l'insieme delle sue tolleranze.</>,
+          <>Aggiungi le regole: per ogni metodo di prova indica il <b>grado minimo</b> accettato (scala 1–5, dove 5 = nessuna differenza) e/o il <b>ΔE massimo</b> (differenza di colore: più basso = più simile).</>,
+          <>Scorciatoie: incolla il CSV del cliente ("Importa da CSV") o allega il PDF del capitolato originale come riferimento.</>,
+          <>Da qui in poi ogni prova collegata a questo capitolato riceve automaticamente il verdetto conforme / non conforme.</>,
+        ]}
+      />
 
       <Card className="border-brand-200 bg-brand-50">
         <p className="text-sm text-steel">

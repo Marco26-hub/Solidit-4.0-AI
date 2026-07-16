@@ -9,6 +9,7 @@ import {
   retireCalibrationReference,
 } from "@/api/quality";
 import { Icon, type IconName } from "@/components/icons";
+import { PageGuide } from "@/components/PageGuide";
 import {
   Badge,
   Button,
@@ -221,6 +222,14 @@ export function DevicesPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Dispositivi e standard" subtitle="iPhone autorizzati e riferimenti fisici per il colore" />
+      <PageGuide
+        steps={[
+          <>Registra ogni <b>iPhone</b> del laboratorio: solo i telefoni registrati scattano le foto delle prove.</>,
+          <>Registra i <b>riferimenti fisici</b> del kit: lightbox (la cabina luce), scala grigi, piastrina bianca. Scegli prima "a cosa serve", poi lo strumento.</>,
+          <>Per ognuno inserisci <b>numero certificato</b> e <b>scadenza</b>: sono la prova che il kit è tarato.</>,
+          <>Attenzione: con un riferimento <b>scaduto</b> l'analisi si <b>blocca</b>. Controlla i badge: verde = valido, ambra = in scadenza (rinnova!), rosso = scaduto.</>,
+        ]}
+      />
 
       <Card>
         <div className="mb-1 font-medium">iPhone autorizzati</div>
