@@ -220,48 +220,69 @@ export function BrandSpecsPage() {
               ? fibersForMethod(r.test_method_code, methods.data ?? [], profiles.data ?? [])
               : ALL_FIBERS;
             return (
-            <div key={i} className="grid grid-cols-2 gap-2 md:grid-cols-6">
-              <MethodSelect
-                methods={methods.data ?? []}
-                value={r.test_method_code}
-                emptyLabel="metodo…"
-                onChange={(code) =>
-                  // changing the norm resets the fibre to "tutte le fibre" (norm's multifibre)
-                  setRule(i, { test_method_code: code, fiber_code: null })
-                }
-              />
-              <Select
-                value={r.fiber_code ?? ""}
-                onChange={(e) => setRule(i, { fiber_code: e.target.value || null })}
-              >
-                <option value="">tutte le fibre (multifibra norma)</option>
-                {ruleFibers.map((f) => (
-                  <option key={f} value={f}>
-                    {f}
-                  </option>
-                ))}
-              </Select>
-              <TextInput
-                type="number"
-                step="0.01"
-                placeholder="ΔE max"
-                value={r.max_delta_e ?? ""}
-                onChange={(e) => setRule(i, { max_delta_e: numOrNull(e.target.value) })}
-              />
-              <TextInput
-                type="number"
-                step="0.5"
-                placeholder="grado min (scala grigi)"
-                value={r.min_gray_scale_grade ?? ""}
-                onChange={(e) => setRule(i, { min_gray_scale_grade: numOrNull(e.target.value) })}
-              />
-              <Select value={r.severity} onChange={(e) => setRule(i, { severity: e.target.value })}>
-                <option value="blocking">Bloccante (non conforme)</option>
-                <option value="warning">Avviso (segnalazione)</option>
-              </Select>
-              <Button variant="ghost" type="button" onClick={() => setRules((rs) => rs.filter((_, idx) => idx !== i))}>
-                ✕
-              </Button>
+            <div key={i} className="rounded-lg border border-slate-200 bg-slate-50/50 p-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <Field label="Metodo (norma)">
+                  <MethodSelect
+                    methods={methods.data ?? []}
+                    value={r.test_method_code}
+                    emptyLabel="— scegli metodo —"
+                    onChange={(code) =>
+                      // changing the norm resets the fibre to "tutte le fibre" (norm's multifibre)
+                      setRule(i, { test_method_code: code, fiber_code: null })
+                    }
+                  />
+                </Field>
+                <Field label="Fibra">
+                  <Select
+                    value={r.fiber_code ?? ""}
+                    onChange={(e) => setRule(i, { fiber_code: e.target.value || null })}
+                  >
+                    <option value="">tutte le fibre (multifibra norma)</option>
+                    {ruleFibers.map((f) => (
+                      <option key={f} value={f}>
+                        {f}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field label="Severità">
+                  <Select
+                    value={r.severity}
+                    onChange={(e) => setRule(i, { severity: e.target.value })}
+                  >
+                    <option value="blocking">Bloccante (non conforme)</option>
+                    <option value="warning">Avviso (segnalazione)</option>
+                  </Select>
+                </Field>
+                <Field label="ΔE massimo">
+                  <TextInput
+                    type="number"
+                    step="0.01"
+                    placeholder="es. 1,0"
+                    value={r.max_delta_e ?? ""}
+                    onChange={(e) => setRule(i, { max_delta_e: numOrNull(e.target.value) })}
+                  />
+                </Field>
+                <Field label="Grado minimo (scala grigi 1–5)">
+                  <TextInput
+                    type="number"
+                    step="0.5"
+                    placeholder="es. 4"
+                    value={r.min_gray_scale_grade ?? ""}
+                    onChange={(e) => setRule(i, { min_gray_scale_grade: numOrNull(e.target.value) })}
+                  />
+                </Field>
+                <div className="flex items-end">
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    onClick={() => setRules((rs) => rs.filter((_, idx) => idx !== i))}
+                  >
+                    ✕ Rimuovi regola
+                  </Button>
+                </div>
+              </div>
             </div>
             );
           })}

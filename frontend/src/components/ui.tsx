@@ -49,7 +49,15 @@ export function Button({
 }
 
 const FIELD_BASE =
-  "w-full rounded-lg border border-slate-300 bg-white px-3 text-base outline-none transition focus:border-brand-500 min-h-[44px] sm:text-sm";
+  "w-full rounded-lg border border-slate-300 bg-white px-3 text-base text-ink outline-none transition focus:border-brand-500 min-h-[44px] sm:text-sm";
+
+// Native selects render their value with the platform text colour and truncate
+// silently when cramped. Force dark text, add breathing room + an explicit
+// chevron so every dropdown reads as an obvious, legible control.
+const SELECT_CHEVRON =
+  "appearance-none bg-no-repeat pr-9 cursor-pointer " +
+  "bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23475569%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22/%3E%3C/svg%3E')] " +
+  "[background-position:right_0.6rem_center]";
 
 export function TextInput({ className = "", ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={`${FIELD_BASE} py-2 ${className}`} {...props} />;
@@ -57,7 +65,7 @@ export function TextInput({ className = "", ...props }: InputHTMLAttributes<HTML
 
 export function Select({ className = "", children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select className={`${FIELD_BASE} ${className}`} {...props}>
+    <select className={`${FIELD_BASE} ${SELECT_CHEVRON} ${className}`} {...props}>
       {children}
     </select>
   );

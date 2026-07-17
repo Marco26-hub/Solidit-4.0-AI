@@ -12,7 +12,7 @@ import {
   listProficiencyTests,
   listValidationRuns,
 } from "@/api/quality";
-import { Badge, Button, Card, EmptyState, ErrorText, Field, PageHeader, TextInput } from "@/components/ui";
+import { Badge, Button, Card, EmptyState, ErrorText, Field, PageHeader, Select, TextInput } from "@/components/ui";
 import { PageGuide } from "@/components/PageGuide";
 
 export function ValidationPage() {
@@ -230,32 +230,38 @@ function RunDetail({ runId }: { runId: string }) {
       </div>
       {samples.length === 0 && <p className="py-2 text-sm text-steel">Nessun campione.</p>}
 
-      <div className="mt-3 grid gap-2 md:grid-cols-6">
-        <TextInput placeholder="codice" value={code} onChange={(e) => setCode(e.target.value)} />
-        <TextInput placeholder="fibra" value={fiber} onChange={(e) => setFiber(e.target.value)} />
-        <select
-          className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
-          value={method}
-          onChange={(e) => setMethod(e.target.value)}
-        >
-          <option value="spectrophotometer">spettrofotometro</option>
-          <option value="visual">visivo esperto</option>
-          <option value="external_lab">lab esterno</option>
-        </select>
-        <TextInput
-          type="number"
-          step="0.5"
-          placeholder="grado SW"
-          value={sw}
-          onChange={(e) => setSw(e.target.value)}
-        />
-        <TextInput
-          type="number"
-          step="0.5"
-          placeholder="grado rif."
-          value={ref}
-          onChange={(e) => setRef(e.target.value)}
-        />
+      <div className="mt-3 grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Field label="Codice campione">
+          <TextInput placeholder="es. C-01" value={code} onChange={(e) => setCode(e.target.value)} />
+        </Field>
+        <Field label="Fibra">
+          <TextInput placeholder="es. cotone" value={fiber} onChange={(e) => setFiber(e.target.value)} />
+        </Field>
+        <Field label="Metodo di riferimento">
+          <Select value={method} onChange={(e) => setMethod(e.target.value)}>
+            <option value="spectrophotometer">spettrofotometro</option>
+            <option value="visual">visivo esperto</option>
+            <option value="external_lab">lab esterno</option>
+          </Select>
+        </Field>
+        <Field label="Grado software">
+          <TextInput
+            type="number"
+            step="0.5"
+            placeholder="es. 4"
+            value={sw}
+            onChange={(e) => setSw(e.target.value)}
+          />
+        </Field>
+        <Field label="Grado riferimento">
+          <TextInput
+            type="number"
+            step="0.5"
+            placeholder="es. 4,5"
+            value={ref}
+            onChange={(e) => setRef(e.target.value)}
+          />
+        </Field>
         <Button disabled={!code || add.isPending} onClick={() => add.mutate()}>
           {add.isPending ? "…" : "+ campione"}
         </Button>

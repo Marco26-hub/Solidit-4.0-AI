@@ -3,7 +3,9 @@ import { useMemo } from "react";
 import type { TestMethod } from "@/api/types";
 
 const SELECT_BASE =
-  "w-full rounded-lg border border-slate-300 bg-white px-3 text-base outline-none transition focus:border-brand-500 min-h-[44px] sm:text-sm";
+  "w-full rounded-lg border border-slate-300 bg-white px-3 text-base text-ink outline-none transition focus:border-brand-500 min-h-[44px] sm:text-sm " +
+  "appearance-none cursor-pointer bg-no-repeat pr-9 [background-position:right_0.6rem_center] " +
+  "bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23475569%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22/%3E%3C/svg%3E')]";
 
 /** Collapse the fine standard_family label into one of the top-level norm bodies. */
 export function normGroup(fam: string | null | undefined): string {
